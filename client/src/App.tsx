@@ -7,6 +7,10 @@ import type { Actions } from "../../server/src/actions";
 
 const FIELDS = actionFields<typeof Actions>();
 
+/* Versión visible de la app: se muestra en el pie de la portada y en el
+   panel del maestro para comprobar qué build está desplegado. */
+const APP_VERSION = "v22";
+
 /* ============ Utilidades: semilla por iniciales ============ */
 function hashStr(s: string): number {
   let h = 2166136261;
@@ -127,9 +131,9 @@ const NEW_QUESTIONS: BaseQ[] = [
   { id: "rev-suma-parcial", topic: "Resultado de fórmulas", q: "En B2 hay 14, en B3 hay 20, en B4 hay 26 y en B5 hay 11. ¿Qué resultado da la fórmula =B2+B4?", cells: { B2: "14", B3: "20", B4: "26", B5: "11", B6: "=B2+B4" }, options: ["71", "34", "37", "40"], correct: 3, expl: "La fórmula suma solo dos celdas sueltas: B2 + B4 = 14 + 26 = 40. No incluye B3 ni B5. (71 sería sumar todo el rango B2:B5.)" },
   { id: "rev-suma-precios", topic: "Resultado de fórmulas", q: "En D2 hay 120, en D3 hay 85, en D4 hay 200 y en D5 hay 95 (son precios). ¿Qué resultado da la fórmula =SUMA(D2:D5)?", cells: { D2: "120", D3: "85", D4: "200", D5: "95", D6: "=SUMA(D2:D5)" }, options: ["125", "500", "200", "380"], correct: 1, expl: "SUMA agrega los cuatro precios: 120 + 85 + 200 + 95 = 500. (125 sería el promedio y 200 el precio mayor.)" },
   { id: "rev-descuento", topic: "Resultado de fórmulas", q: "En D2 hay 400 (un precio) y en E2 hay 0.25 (un descuento del 25%). ¿Qué resultado da la fórmula =D2*(1-E2)? Es el precio ya con el descuento aplicado.", cells: { D2: "400", E2: "0.25", F2: "=D2*(1-E2)" }, options: ["100", "300", "500", "375"], correct: 1, expl: "1 − 0.25 = 0.75, y 400 × 0.75 = 300: es lo que se paga tras quitar el 25%. (100 sería solo el descuento en pesos, sin restarlo.)" },
-  { id: "rev-concatenar", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Carlos\", en B2 está escrito \"Ruiz\" y en C2 está escrito \"Mora\". ¿Qué resultado da la fórmula =CONCATENAR(A2;\" \";B2;\" \";C2)?", cells: { A2: "Carlos", B2: "Ruiz", C2: "Mora", D2: "=CONCATENAR(A2;\" \";B2;\" \";C2)" }, options: ["CarlosRuizMora", "Mora Ruiz Carlos", "Carlos Ruiz Mora", "Carlos+Ruiz+Mora"], correct: 2, expl: "CONCATENAR une los tres textos en orden y cada \" \" agrega un espacio: \"Carlos\" + \" \" + \"Ruiz\" + \" \" + \"Mora\" = Carlos Ruiz Mora." },
-  { id: "rev-concatenar-sin-espacio", topic: "Resultado de fórmulas", q: "En A2 está escrito \"María\", en B2 está escrito \"López\" y en C2 está escrito \"Vega\". ¿Qué resultado da la fórmula =CONCATENAR(A2;B2;C2)?", cells: { A2: "María", B2: "López", C2: "Vega", D2: "=CONCATENAR(A2;B2;C2)" }, options: ["María López Vega", "MaríaLópezVega", "VegaLópezMaría", "María+López+Vega"], correct: 1, expl: "CONCATENAR une los tres textos tal cual y esta fórmula no incluye ningún \" \" entre ellos, así que el resultado sale todo pegado, sin espacios: \"María\" + \"López\" + \"Vega\" = MaríaLópezVega." },
-  { id: "rev-concatenar-error", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Ana\", en B2 está escrito \"Paz\" y en C2 está escrito \"León\". Escribes la fórmula =CONCATENR(A2;B2;C2) (fíjate bien en el nombre de la función). ¿Qué pasa en Excel?", cells: { A2: "Ana", B2: "Paz", C2: "León", D2: "#¿NOMBRE?" }, bar: "=CONCATENR(A2;B2;C2)", options: ["Ana Paz León", "AnaPazLeón", "#¿NOMBRE?", "Excel lo corrige solo y une los textos"], correct: 2, expl: "El nombre de la función está mal escrito: CONCATENR no existe (la correcta es CONCATENAR). Excel no reconoce ese nombre y muestra el error #¿NOMBRE?, así que no une ninguno de los tres textos." },
+  { id: "rev-concatenar", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Carlos\", en B2 está escrito \"Ruiz\" y en C2 está escrito \"Mora\". ¿Qué resultado da la fórmula =CONCATENAR(C2;\" \";A2;\" \";B2)?", cells: { A2: "Carlos", B2: "Ruiz", C2: "Mora", D2: "=CONCATENAR(C2;\" \";A2;\" \";B2)" }, options: ["Carlos Ruiz Mora", "MoraCarlosRuiz", "Mora Carlos Ruiz", "Mora+Carlos+Ruiz"], correct: 2, expl: "CONCATENAR une los textos en el orden en que aparecen en la fórmula, no en el orden de las columnas: primero C2 (\"Mora\"), luego A2 (\"Carlos\") y al final B2 (\"Ruiz\"), y cada \" \" agrega un espacio: \"Mora\" + \" \" + \"Carlos\" + \" \" + \"Ruiz\" = Mora Carlos Ruiz." },
+  { id: "rev-concatenar-sin-espacio", topic: "Resultado de fórmulas", q: "En A2 está escrito \"María\", en B2 está escrito \"López\" y en C2 está escrito \"Vega\". ¿Qué resultado da la fórmula =CONCATENAR(C2;B2;A2)?", cells: { A2: "María", B2: "López", C2: "Vega", D2: "=CONCATENAR(C2;B2;A2)" }, options: ["María López Vega", "MaríaLópezVega", "Vega López María", "VegaLópezMaría"], correct: 3, expl: "CONCATENAR une los textos en el orden en que aparecen en la fórmula, no en el orden de las columnas: primero C2 (\"Vega\"), luego B2 (\"López\") y al final A2 (\"María\"). Y como la fórmula no incluye ningún \" \" entre ellos, el resultado sale todo pegado, sin espacios: \"Vega\" + \"López\" + \"María\" = VegaLópezMaría." },
+  { id: "rev-concatenar-error", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Ana\", en B2 está escrito \"Paz\" y en C2 está escrito \"León\". Escribes la fórmula =CONCATENR(C2;A2;B2) (fíjate bien en el nombre de la función). ¿Qué pasa en Excel?", cells: { A2: "Ana", B2: "Paz", C2: "León", D2: "#¿NOMBRE?" }, bar: "=CONCATENR(C2;A2;B2)", options: ["León Ana Paz", "LeónAnaPaz", "#¿NOMBRE?", "Excel lo corrige solo y une los textos"], correct: 2, expl: "El nombre de la función está mal escrito: CONCATENR no existe (la correcta es CONCATENAR). Excel no reconoce ese nombre y muestra el error #¿NOMBRE?, así que no une ninguno de los tres textos, sin importar el orden de las celdas." },
   { id: "rev-si", topic: "Resultado de fórmulas", q: "En D2 hay 150. ¿Qué resultado da la fórmula =SI(D2>=100;\"Caro\";\"Barato\")?", cells: { D2: "150", E2: "=SI(D2>=100;\"Caro\";\"Barato\")" }, options: ["Caro", "Barato", "VERDADERO", "150"], correct: 0, expl: "La condición D2>=100 se cumple (150 sí es 100 o más), así que SI devuelve el primer texto: \"Caro\". Si D2 valiera menos de 100, daría \"Barato\"." },
   { id: "rev-importe", topic: "Resultado de fórmulas", q: "En B2 hay 6 (una cantidad) y en C2 hay 45 (un precio unitario). ¿Qué resultado da la fórmula =B2*C2?", cells: { B2: "6", C2: "45", D2: "=B2*C2" }, options: ["51", "39", "7.5", "270"], correct: 3, expl: "El importe es cantidad por precio: 6 × 45 = 270. (51 sería sumarlos y 7.5 dividirlos.)" },
   { id: "rev-suma-entre-contar", topic: "Resultado de fórmulas", q: "En B2 hay 8, en B3 hay 12, en B4 hay 20 y en B5 hay 16. ¿Qué resultado da la fórmula =SUMA(B2:B5)/CONTAR(B2:B5)?", cells: { B2: "8", B3: "12", B4: "20", B5: "16", B6: "=SUMA(B2:B5)/CONTAR(B2:B5)" }, options: ["56", "14", "4", "20"], correct: 1, expl: "Primero las funciones: SUMA da 8 + 12 + 20 + 16 = 56 y CONTAR da 4. Luego la división: 56 ÷ 4 = 14. Es otra forma de calcular el promedio." },
@@ -146,6 +150,30 @@ const NEW_QUESTIONS: BaseQ[] = [
   { id: "ref-mixta-fila-derecha", topic: "Referencias", q: "En C2 está la fórmula =B$1*2, que duplica el dato de la fila 1. La copias hacia la derecha, a la celda D2. ¿Qué fórmula queda en D2?", cells: { B1: "8", C1: "9", C2: "=B$1*2", D2: "¿?" }, options: ["=C$1*2", "=B$1*2", "=C$2*2", "=C1*2"], correct: 0, expl: "En B$1 el $ solo fija la fila; la columna queda libre y al copiar hacia la derecha sí se mueve: B pasa a C. Queda =C$1*2, que duplica el 9 de C1." },
   { id: "ref-tipo-mixta-col", topic: "Referencias", q: "En la fórmula de B2 se usa la referencia $A1. ¿Qué tipo de referencia es y qué parte queda fija?", cells: { A1: "50", B2: "=$A1*2" }, options: ["Mixta: fija la columna A y la fila puede cambiar al copiar hacia abajo", "Absoluta: no cambian ni la columna ni la fila", "Relativa: cambian la columna y la fila", "Mixta: fija la fila 1 y la columna puede cambiar al copiar hacia la derecha"], correct: 0, expl: "El $ va pegado a lo que se fija. En $A1 el $ está antes de la letra, así que solo la columna A está fija: es una referencia mixta (parcial). La fila 1 queda libre y cambia al copiar hacia abajo." },
   { id: "ref-practica-tasa", topic: "Referencias", q: "Tienes precios en A2, A3 y A4, y la tasa del IVA (0.16) está escrita en una sola celda: C1. En B2 vas a escribir la fórmula del IVA de cada precio y copiarla hacia abajo hasta B4. ¿Qué fórmula debes escribir en B2 para que todas las filas usen la misma tasa de C1?", cells: { C1: "0.16", A2: "100", B2: "¿?", A3: "200", A4: "350" }, options: ["=A2*$C$1", "=A2*C1", "=A2*$C1", "=$A$2*C$1"], correct: 0, expl: "La tasa debe ser absoluta, $C$1, para que al copiar hacia abajo siga apuntando a C1. Con C1 a secas pasaría a C2 y C3 (vacías). $C1 solo fija la columna: al bajar, la fila también se movería. Y el precio A2 debe quedar relativo para que cambie en cada fila." },
+  /* Precedencia de operadores: el resultado correcto exige respetar el orden
+     de las operaciones; los distractores lo ignoran (operan de izquierda a derecha). */
+  { id: "prec-suma-mult", topic: "Precedencia de operadores", q: "¿Qué resultado da la fórmula =2+3*4?", cells: { A1: "=2+3*4" }, bar: "=2+3*4", options: ["14", "20", "24", "9"], correct: 0, expl: "En Excel primero van las multiplicaciones y divisiones, y después las sumas y restas: 3 × 4 = 12, y 2 + 12 = 14. El 20 saldría si sumaras primero (2 + 3 = 5, 5 × 4 = 20), pero ese no es el orden correcto." },
+  { id: "prec-paren", topic: "Precedencia de operadores", q: "¿Qué resultado da la fórmula =(2+3)*4?", cells: { A1: "=(2+3)*4" }, bar: "=(2+3)*4", options: ["20", "14", "24", "11"], correct: 0, expl: "Los paréntesis se calculan primero que todo: (2 + 3) = 5, y 5 × 4 = 20. Sin los paréntesis, =2+3*4 daría 14, porque la multiplicación iría antes que la suma." },
+  { id: "prec-resta-mult", topic: "Precedencia de operadores", q: "¿Qué resultado da la fórmula =10-2*3?", cells: { A1: "=10-2*3" }, bar: "=10-2*3", options: ["4", "24", "16", "5"], correct: 0, expl: "Primero se multiplica: 2 × 3 = 6, y luego se resta: 10 − 6 = 4. El 24 saldría si restaras primero (10 − 2 = 8, 8 × 3 = 24), ignorando el orden de las operaciones." },
+  /* Errores de Excel: qué causa cada error y cómo se arregla, con su tablita */
+  { id: "err-div0-fix", topic: "Errores", q: "En C2 está la fórmula =A2/B2 y la celda muestra #¡DIV/0!. ¿Qué lo causa y cómo se arregla?", cells: { A2: "100", B2: "0", C2: "#¡DIV/0!" }, bar: "=A2/B2", options: ["El divisor B2 vale 0: esa división no existe; se arregla poniendo en B2 un número distinto de cero", "La columna C es muy angosta: se arregla ensanchando la columna", "El nombre de la función está mal escrito: se arregla corrigiéndolo", "La celda A2 está vacía: se arregla borrando la fórmula"], correct: 0, expl: "#¡DIV/0! aparece al dividir entre cero (o entre una celda vacía usada como divisor). Aquí B2 vale 0, así que =100/0 no se puede calcular. La solución es que el divisor sea un número distinto de cero." },
+  { id: "err-valor-fix", topic: "Errores", q: "En C2 está la fórmula =A2+B2 y la celda muestra #¡VALOR!. Revisa la tablita: ¿qué lo causa y cómo se arregla?", cells: { A2: "50", B2: "cincuenta", C2: "#¡VALOR!" }, bar: "=A2+B2", options: ["B2 contiene el texto \"cincuenta\" y un texto no se puede sumar con un número: se arregla escribiendo el número 50 en B2", "Se está dividiendo entre cero: se arregla cambiando el divisor", "La columna C es muy angosta: se arregla ensanchándola", "La función está mal escrita: se arregla corrigiendo su nombre"], correct: 0, expl: "#¡VALOR! significa que un dato es del tipo equivocado para la operación: B2 tiene el texto \"cincuenta\" y Excel no puede sumarlo con el 50 de A2. Se arregla escribiendo el valor como número: 50." },
+  { id: "err-nombre-fix", topic: "Errores", q: "Escribes la fórmula =SUMMA(A2:B2) y la celda muestra #¿NOMBRE?. ¿Qué está mal y cómo se arregla?", cells: { A2: "30", B2: "20", C2: "#¿NOMBRE?" }, bar: "=SUMMA(A2:B2)", options: ["El nombre de la función está mal escrito: SUMMA no existe; se arregla escribiendo =SUMA(A2:B2)", "El rango lleva : y debería llevar ;", "Falta el paréntesis de cierre", "Las celdas A2 y B2 tienen texto en vez de números"], correct: 0, expl: "#¿NOMBRE? aparece cuando Excel no reconoce un nombre: la función se llama SUMA, no SUMMA. Al corregir el nombre, la fórmula suma el rango A2:B2: 30 + 20 = 50." },
+  { id: "err-numeral-fix", topic: "Errores", q: "La celda B2 contiene el número 1250000, pero en la hoja solo se ven los símbolos #####. ¿Qué pasa y cómo se arregla?", cells: { B2: "#####" }, options: ["No es un error de cálculo: la columna es demasiado angosta para mostrar el número; se arregla ensanchando la columna", "Es un error grave y hay que borrar la celda", "Se dividió entre cero: se arregla cambiando el divisor", "El número es demasiado grande para Excel y hay que partirlo en dos celdas"], correct: 0, expl: "##### no es un error de cálculo: el dato está bien, solo que no cabe en el ancho de la columna. Se arregla ensanchando la columna (por ejemplo, doble clic en su borde derecho) y el número aparece completo." },
+  /* SI combinado: SI con PROMEDIO adentro y SI anidado con dos condiciones */
+  { id: "si-promedio-aprobado", topic: "SI combinado", q: "Las calificaciones están en B2:B5. ¿Qué resultado da la fórmula =SI(PROMEDIO(B2:B5)>=80;\"Aprobado\";\"Reprobado\")?", cells: { B2: "90", B3: "85", B4: "70", B5: "75", B6: "=SI(PROMEDIO(B2:B5)>=80;\"Aprobado\";\"Reprobado\")" }, options: ["Aprobado", "Reprobado", "80", "VERDADERO"], correct: 0, expl: "Primero se calcula el PROMEDIO de adentro: (90 + 85 + 70 + 75) ÷ 4 = 320 ÷ 4 = 80. La condición es >=80 y 80 sí la cumple (el >= incluye el igual), así que SI devuelve el primer texto: \"Aprobado\"." },
+  { id: "si-promedio-reprobado", topic: "SI combinado", q: "Las calificaciones están en B2:B5. ¿Qué resultado da la fórmula =SI(PROMEDIO(B2:B5)>=80;\"Aprobado\";\"Reprobado\")?", cells: { B2: "60", B3: "70", B4: "75", B5: "55", B6: "=SI(PROMEDIO(B2:B5)>=80;\"Aprobado\";\"Reprobado\")" }, options: ["Reprobado", "Aprobado", "65", "260"], correct: 0, expl: "El PROMEDIO de adentro es (60 + 70 + 75 + 55) ÷ 4 = 260 ÷ 4 = 65. Como 65 no llega a 80, la condición es falsa y SI devuelve el segundo texto: \"Reprobado\". (260 sería solo la suma, sin promediar.)" },
+  { id: "si-anidado", topic: "SI combinado", q: "En B2 hay una calificación de 75. ¿Qué resultado da la fórmula =SI(B2>=90;\"Excelente\";SI(B2>=70;\"Bien\";\"A estudiar\"))?", cells: { B2: "75", B3: "=SI(B2>=90;\"Excelente\";SI(B2>=70;\"Bien\";\"A estudiar\"))" }, options: ["Bien", "Excelente", "A estudiar", "75"], correct: 0, expl: "Es un SI dentro de otro SI. Primero se pregunta si 75 >= 90: no. Entonces pasa al segundo SI: ¿75 >= 70? Sí, así que devuelve \"Bien\". Solo si tampoco cumpliera la segunda condición daría \"A estudiar\"." },
+  /* Tabla de multiplicar con referencias mixtas: una sola fórmula =$A2*B$1
+     en B2 que se copia a toda la tabla */
+  { id: "mult-c3", topic: "Referencias mixtas", q: "Estás armando la tabla de multiplicar: en el renglón 1 van los números 1, 2, 3 y en la columna A también. En B2 escribiste la fórmula =$A2*B$1 y la copias a toda la tabla. Al copiarla a la celda C3, ¿qué fórmula queda en C3?", cells: { B1: "1", C1: "2", D1: "3", A2: "1", B2: "=$A2*B$1", A3: "2", C3: "¿?", A4: "3" }, options: ["=$A3*C$1", "=$A2*B$1", "=A3*C1", "=$A3*C1"], correct: 0, expl: "En $A2 el $ fija la columna A, pero la fila queda libre: al bajar a la fila 3 pasa a $A3. En B$1 el $ fija la fila 1, pero la columna queda libre: al moverse a la columna C pasa a C$1. En C3 queda =$A3*C$1, que multiplica el 2 de A3 por el 2 de C1." },
+  { id: "mult-b2", topic: "Referencias mixtas", q: "En la tabla de multiplicar, los números 1, 2, 3 están en el renglón 1 (B1, C1, D1) y también en la columna A (A2, A3, A4). Quieres escribir UNA sola fórmula en B2 y copiarla a toda la tabla (hacia la derecha y hacia abajo). ¿Qué fórmula debes escribir en B2?", cells: { B1: "1", C1: "2", D1: "3", A2: "1", B2: "¿?", A3: "2", A4: "3" }, options: ["=$A2*B$1", "=A2*B1", "=$A$2*$B$1", "=A$2*B$1"], correct: 0, expl: "Se necesitan dos referencias mixtas: $A2 fija la columna A (para seguir leyendo la columna A al copiar hacia la derecha) pero deja la fila libre para bajar; B$1 fija la fila 1 (para seguir leyendo el renglón 1 al copiar hacia abajo) pero deja la columna libre. Sin ningún $, la fórmula se desacomoda al copiar; con todo absoluto, siempre multiplicaría A2 por B1." },
+  { id: "mult-d4", topic: "Referencias mixtas", q: "Sigues con la tabla de multiplicar: en B2 está la fórmula =$A2*B$1 y la copias hasta la celda D4. ¿Qué fórmula queda en D4?", cells: { B1: "1", C1: "2", D1: "3", A2: "1", B2: "=$A2*B$1", A3: "2", A4: "3", D4: "¿?" }, options: ["=$A4*D$1", "=$A2*B$1", "=$A4*D1", "=A4*D$1"], correct: 0, expl: "Al copiar hasta D4 la fórmula se mueve en las dos direcciones: la columna A queda fija por el $, pero la fila baja hasta 4 ($A4); la fila 1 queda fija por el $, pero la columna avanza hasta D (D$1). Queda =$A4*D$1, que da 3 × 3 = 9." },
+  /* Detectar el error en la fórmula: paréntesis que falta, rango con ; en
+     vez de : y nombre de función mal escrito */
+  { id: "det-paren", topic: "Detectar el error", q: "En B6 un alumno escribió la fórmula que se ve en la barra de fórmulas y Excel no la acepta. ¿Qué está mal en esa fórmula?", cells: { B2: "12", B3: "18", B4: "25", B5: "15", B6: "=SUMA(B2:B5" }, bar: "=SUMA(B2:B5", options: ["Falta el paréntesis de cierre: la fórmula debe terminar en ) → =SUMA(B2:B5)", "El rango debe escribirse con ; en vez de :", "La función SUMA está mal escrita", "Falta el signo = al principio"], correct: 0, expl: "La fórmula abre un paréntesis después de SUMA pero nunca lo cierra. Toda fórmula debe cerrar los paréntesis que abre: =SUMA(B2:B5). El rango con : y el nombre SUMA están bien escritos." },
+  { id: "det-pyc", topic: "Detectar el error", q: "En B6 está la fórmula =PROMEDIO(B2;B5). El alumno esperaba el promedio de los cuatro datos, pero el resultado no es ese. ¿Qué resultado da la fórmula y por qué?", cells: { B2: "10", B3: "20", B4: "30", B5: "50", B6: "=PROMEDIO(B2;B5)" }, options: ["30: con ; solo se promedian las celdas sueltas B2 y B5, (10 + 50) ÷ 2", "27.5: el promedio de los cuatro datos", "#¡VALOR!, porque el ; no se puede usar en las fórmulas", "110: la suma de todo el rango"], correct: 0, expl: "El punto y coma (;) separa celdas sueltas: =PROMEDIO(B2;B5) solo toma B2 y B5, y (10 + 50) ÷ 2 = 30. Para promediar todo el rango debió usar dos puntos: =PROMEDIO(B2:B5), que daría 27.5." },
+  { id: "det-nombre", topic: "Detectar el error", q: "Escribes la fórmula =PROMEDIIO(B2:B5) y la celda muestra #¿NOMBRE?. ¿Qué está mal?", cells: { B2: "80", B3: "90", B4: "70", B5: "100", B6: "#¿NOMBRE?" }, bar: "=PROMEDIIO(B2:B5)", options: ["El nombre de la función está mal escrito: lleva doble I (PROMEDIIO); la correcta es PROMEDIO", "El rango debe escribirse con ; en vez de :", "Falta el paréntesis de cierre", "Las celdas del rango tienen texto en vez de números"], correct: 0, expl: "#¿NOMBRE? significa que Excel no reconoce un nombre: la función se escribe PROMEDIO, con una sola I. El rango B2:B5 y los paréntesis están bien escritos." },
 ];
 
 /* Reactivos de teoría cuyos números/nombres se generan de la variante (T3, T4, T7, T9, T12 de la propuesta) */
@@ -597,6 +625,13 @@ export function App() {
   const [step, setStep] = useState(0);
   const finishedRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  // Último avance que aún no se confirma guardado en el servidor; se usa
+  // para reintentar y para vaciarlo al salir de la página.
+  const pendingSaveRef = useRef<{ initials: string; studentName: string; variantCode: string; state: string } | null>(null);
+  // Estado visible del autoguardado en el encabezado del examen: antes un
+  // fallo era silencioso y el alumno volvía a empezar sin saber por qué.
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const unlocked = teacherPw.length > 0;
   const teacherStatus = useQuery({ queryKey: ["teacher-status"], queryFn: () => api.teacherStatus({}), enabled: phase === "teacher" });
@@ -722,19 +757,55 @@ export function App() {
     setPhase("exam");
   }
 
-  // Autoguardado del avance: cada cambio en respuestas, fórmulas o celda
-  // actual se guarda en el servidor (con 800 ms de espera) mientras el
-  // examen sigue abierto, para poder continuar si se sale o se cierra.
+  // Autoguardado del avance: cada cambio en respuestas, fórmulas, celda
+  // actual o pregunta se guarda en el servidor (con 500 ms de espera)
+  // mientras el examen sigue abierto, para poder continuar si se sale o
+  // se cierra. El estado del guardado se muestra en el encabezado y, si
+  // falla, se reintenta una vez y el aviso queda visible: nada de fallos
+  // silenciosos que devuelven al alumno a la pregunta 1 sin explicación.
   useEffect(() => {
     if (phase !== "exam" || !session || finishedRef.current) return;
+    const snap = { initials: session.initials, studentName: session.name, variantCode: session.variant.code, state: JSON.stringify({ answers, formulas, selectedCell, step }) };
+    pendingSaveRef.current = snap;
+    setSaveStatus("saving");
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    const snap = { initials: session.initials, name: session.name, code: session.variant.code, state: JSON.stringify({ answers, formulas, selectedCell, step }) };
+    if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
       if (finishedRef.current) return;
-      void api.saveProgress({ initials: snap.initials, studentName: snap.name, variantCode: snap.code, state: snap.state }).catch(() => undefined);
-    }, 800);
+      void api.saveProgress(snap).then(
+        () => { if (pendingSaveRef.current === snap) { pendingSaveRef.current = null; setSaveStatus("saved"); } },
+        () => {
+          retryTimerRef.current = window.setTimeout(() => {
+            if (finishedRef.current || pendingSaveRef.current !== snap) return;
+            void api.saveProgress(snap).then(
+              () => { if (pendingSaveRef.current === snap) { pendingSaveRef.current = null; setSaveStatus("saved"); } },
+              () => { if (pendingSaveRef.current === snap) setSaveStatus("error"); },
+            );
+          }, 2500);
+        },
+      );
+    }, 500);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
   }, [phase, session, answers, formulas, selectedCell, step]);
+
+  // Al ocultar o cerrar la página, lo que falte por guardar se envía de
+  // inmediato, sin esperar al temporizador: es la última oportunidad de
+  // que el avance quede en el servidor si el alumno se sale a media prueba.
+  useEffect(() => {
+    const flush = () => {
+      const snap = pendingSaveRef.current;
+      if (!snap || finishedRef.current) return;
+      pendingSaveRef.current = null;
+      void api.saveProgress(snap).catch(() => undefined);
+    };
+    const onVisibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   // Valores de la hoja para la variante activa
   const sheetValues = useMemo<Record<string, number>>(() => {
@@ -786,6 +857,10 @@ export function App() {
     const g = computeGrade();
     if (!g || !session) return;
     finishedRef.current = true; // el envío borra el avance guardado en el servidor
+    // Ningún guardado pendiente debe recrear el avance después del envío.
+    pendingSaveRef.current = null;
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
     setGrade(g);
     setPhase("result");
     submitMut.mutate({
@@ -806,7 +881,7 @@ export function App() {
         <SafeAreaTopScrim backgroundColor="var(--bg)" />
         <main className="mx-auto max-w-2xl px-4 pb-10 pt-6">
           <div className="rounded-2xl p-5 sm:p-7" style={{ background: "#217346", color: "#fff" }}>
-            <p className="text-xs font-bold uppercase tracking-widest opacity-80">Nivel básico · Se califica solo</p>
+            <p className="text-xs font-bold uppercase tracking-widest opacity-80">Nivel básico</p>
             <h1 className="mt-2 text-3xl font-extrabold leading-tight">Examen de Excel</h1>
             <p className="mt-2 text-sm leading-relaxed opacity-95">Examen de teoría de opción múltiple y ejercicios prácticos en una hoja. Cada alumno recibe un examen único según sus iniciales y la calificación sale al instante al terminar.</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
@@ -843,7 +918,7 @@ export function App() {
             <button type="button" disabled={checkingStart} onClick={() => void startExam()} className="mt-5 w-full rounded-xl py-3 text-base font-bold text-white disabled:opacity-40" style={{ background: "#217346" }}>{checkingStart ? "Verificando…" : "Comenzar mi examen"}</button>
           </section>
 
-          <p className="mt-3 text-center text-xs" style={{ color: "var(--dim)" }}>Grupo de 54 alumnos · Cada resultado se guarda con iniciales y variante.</p>
+          <p className="mt-3 text-center text-xs" style={{ color: "var(--dim)" }}>Grupo de 54 alumnos · Cada resultado se guarda con iniciales y variante. · Versión {APP_VERSION}</p>
           <p className="mt-6 text-center">
             <button type="button" onClick={() => setPhase("teacher")} className="text-xs font-semibold underline underline-offset-2" style={{ color: "var(--dim)" }}>
               Acceso docente
@@ -865,8 +940,16 @@ export function App() {
         <main className="mx-auto max-w-3xl px-4 pb-10 pt-6">
           <button type="button" onClick={() => setPhase("intro")} className="text-sm font-bold" style={{ color: "var(--accent)" }}>← Volver al inicio</button>
           <h1 className="mt-2 text-2xl font-extrabold">Panel del maestro</h1>
+          <p className="mt-1 text-xs" style={{ color: "var(--dim)" }}>Versión {APP_VERSION}</p>
 
           {teacherStatus.isPending && <p className="mt-4 text-sm" style={{ color: "var(--dim)" }}>Cargando…</p>}
+
+          {teacherStatus.isError && (
+            <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Sin conexión con el servidor">
+              <p role="alert" className="rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>No se pudo contactar el servidor de acciones, así que el panel no puede pedir la contraseña ni mostrar la lista o los resultados. Si estás en el enlace de Railway, ese despliegue no está ejecutando el servidor de acciones (solo sirve archivos estáticos): hay que redesplegar con el servidor real incluido en el proyecto.</p>
+              <button type="button" onClick={() => void teacherStatus.refetch()} className="mt-3 rounded-xl px-4 py-2.5 text-sm font-bold text-white" style={{ background: "#217346" }}>Reintentar</button>
+            </section>
+          )}
 
           {status && !status.dbReady && (
             <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Panel no disponible">
@@ -985,7 +1068,7 @@ export function App() {
 
           <section className="mt-4 rounded-2xl border p-5 text-sm leading-relaxed" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--dim)" }} aria-label="Publicación en Railway">
             <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>Publicar en Railway</h2>
-            <p className="mt-1">En la carpeta del proyecto vienen <span className="font-mono">railway.json</span>, <span className="font-mono">Dockerfile</span> y <span className="font-mono">.env.example</span> con las variables documentadas, además de la guía <span className="font-mono">DESPLIEGUE-RAILWAY.md</span> paso a paso. Esta versión dentro de Muse ya guarda los resultados; la de Railway usa los mismos archivos de despliegue incluidos.</p>
+            <p className="mt-1">En la carpeta del proyecto vienen <span className="font-mono">railway.json</span>, <span className="font-mono">Dockerfile</span> y <span className="font-mono">.env.example</span> con las variables documentadas, además de la guía <span className="font-mono">DESPLIEGUE-RAILWAY.md</span> paso a paso. El contenedor de Railway corre el servidor real del proyecto (<span className="font-mono">server/serve-railway.ts</span>): sirve la página y atiende las acciones contra Postgres, igual que esta versión dentro de Muse, así que el panel pide la contraseña y el avance se guarda también allá.</p>
           </section>
         </main>
       </div>
@@ -1132,6 +1215,9 @@ export function App() {
         <div className="mx-auto mt-2 h-2 max-w-3xl overflow-hidden rounded-full" style={{ background: "var(--border)" }} role="progressbar" aria-valuenow={answeredCount + pracDone} aria-valuemin={0} aria-valuemax={v.questions.length + v.practicalCells.length} aria-label="Progreso del examen">
           <div className="h-full rounded-full transition-all" style={{ width: `${((answeredCount + pracDone) / (v.questions.length + v.practicalCells.length)) * 100}%`, background: "#217346" }} />
         </div>
+        <p className="mx-auto mt-1 h-4 max-w-3xl text-right text-[11px] font-semibold leading-4" role="status" style={{ color: saveStatus === "error" ? "#B23A48" : "var(--dim)" }}>
+          {saveStatus === "saving" ? "Guardando tu avance…" : saveStatus === "saved" ? "Avance guardado ✓" : saveStatus === "error" ? "⚠ No se pudo guardar tu avance; se seguirá intentando." : ""}
+        </p>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pb-12 pt-4">
@@ -1144,7 +1230,7 @@ export function App() {
         {currentTask ? (
         <section className="mt-3" aria-label="Práctica en hoja simulada">
           <h2 className="text-xl font-extrabold">Práctica en la hoja</h2>
-          <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>Un ejercicio práctico (1 punto). Escribe su fórmula en la barra de fórmulas, en la celda amarilla indicada; el resultado se calcula solo.</p>
+          <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>Un ejercicio práctico (1 punto). Escribe su fórmula en la barra de fórmulas o directamente en la celda amarilla indicada (es la misma respuesta: lo que escribas en un lado aparece en el otro); el resultado se calcula solo.</p>
 
           {/* Ejercicio práctico actual */}
           <div className="mt-3 rounded-xl border-2 px-3 py-3" style={{ background: "var(--surface)", borderColor: "#217346" }}>
@@ -1183,6 +1269,26 @@ export function App() {
                       const isSel = selectedCell === addr;
                       const isHeader = visible && r === 1;
                       const content = visible ? displayFor(addr) : "";
+                      // La celda amarilla seleccionada se edita en la propia
+                      // celda: el input escribe en el mismo estado que la
+                      // barra fx (formulas[addr]), así ambos quedan
+                      // sincronizados porque son la misma respuesta.
+                      if (editable && isSel) {
+                        return (
+                          <td key={addr}>
+                            <input aria-label={`Escribe la fórmula en la celda ${addr}`} value={formulas[addr] ?? ""} autoFocus
+                              onChange={(e) => setFormulas((prev) => ({ ...prev, [addr]: e.target.value }))}
+                              onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                              placeholder="Escribe la fórmula"
+                              className="block h-10 w-full px-1 font-mono text-[13px]"
+                              style={{
+                                border: "2px solid #217346",
+                                background: "#FFF3B0",
+                                color: "var(--text)", minHeight: 40,
+                              }} />
+                          </td>
+                        );
+                      }
                       return (
                         <td key={addr}>
                           <button type="button" aria-label={`Celda ${addr}${editable ? ", editable" : ""}: ${content || "vacía"}`} onClick={() => setSelectedCell(addr)}
@@ -1202,7 +1308,7 @@ export function App() {
               </tbody>
             </table>
           </div>
-          <p className="mt-1.5 text-xs" style={{ color: "var(--dim)" }}>Solo se muestra lo de este ejercicio. La celda amarilla es la que debes completar.</p>
+          <p className="mt-1.5 text-xs" style={{ color: "var(--dim)" }}>Solo se muestra lo de este ejercicio. La celda amarilla es la que debes completar: haz clic en ella para escribir la fórmula ahí mismo, o escríbela en la barra fx de arriba.</p>
 
         </section>
         ) : (

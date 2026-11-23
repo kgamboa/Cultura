@@ -7,7 +7,8 @@ Guía rápida para el maestro. La versión que vive dentro de Muse ya funciona y
 | Archivo | Para qué sirve |
 |---|---|
 | `railway.json` | Le dice a Railway que construya con el `Dockerfile` y reinicie el servicio si falla. |
-| `Dockerfile` | Construye el cliente con Bun y lo sirve en el puerto `$PORT` que asigna Railway. |
+| `Dockerfile` | Construye el cliente y el servidor con Bun y arranca el servidor en el puerto `$PORT` que asigna Railway (antes corre la migración automática). |
+| `server/serve-railway.ts` | El servidor real del despliegue: sirve los archivos de `client/dist` **y** atiende `POST /actions` ejecutando las mismas acciones y handlers del proyecto contra Postgres. Sin él, el contenedor solo servía archivos estáticos y devolvía `index.html` también para `/actions`: ninguna acción se ejecutaba, el panel del maestro no pedía contraseña y el avance del examen no se guardaba. |
 | `vendor/space-sdk/` | El paquete `@hatch/space-sdk` extraído como directorio de texto (`package.json` + `dist`). `package.json` lo declara como dependencia `file:./vendor/space-sdk`, así que `bun install` lo resuelve localmente en cualquier entorno, sin rutas de Muse. Va como texto (sin el `.tgz` binario anterior) para que el repo se pueda subir completo a GitHub. No incluye `dist/pdfjs-assets/` (binarios de pdf.js: cmaps, fuentes y wasm): este examen no usa el visor de PDF del SDK, así que no hacen falta. |
 | `client/build-railway.mjs` | Compila el cliente dentro del contenedor. El build normal (`client/build.mjs`, del SDK) solo corre dentro de Muse, así que Railway usa este script equivalente con la misma salida (`client/dist`). |
 | `.env.example` | Plantilla de variables de entorno documentadas (no subas un `.env` real con claves). |
@@ -25,6 +26,7 @@ Guía rápida para el maestro. La versión que vive dentro de Muse ya funciona y
 6. En **Settings → Networking → Generate Domain** crea la dirección pública y compártela con el grupo.
 7. Después del primer despliegue, abre el **panel del maestro** y define la contraseña (ver la sección siguiente); hasta definirla, el panel no muestra la lista ni los resultados. Ya con el panel desbloqueado, carga la lista de los 54 alumnos **una sola vez desde el panel**: las tablas se crean solas al arrancar, pero la lista NO va en el repositorio (es público y trae nombres de alumnos), así que ningún despliegue la sube automáticamente.
 8. Prueba: entra con unas iniciales de ejemplo, resuelve una pregunta y verifica que cargue la hoja simulada.
+9. **Verifica que el servidor de acciones sí está corriendo** (es el paso que faltaba): en los **Deploy Logs** del servicio debe aparecer la línea `[railway] Examen de Excel escuchando en el puerto … · 13 acciones listas en POST /actions · DATABASE_URL configurada`. Y al pulsar **Acceso docente**, el panel debe pedir definir o escribir la contraseña — si se abre sin pedir nada y solo se ve la tarjeta «Publicar en Railway», el despliegue sigue sirviendo solo archivos estáticos (Dockerfile viejo) y hay que redesplegar. Otra comprobación: contesta dos o tres preguntas, sal y vuelve a entrar con las mismas iniciales; debes continuar donde ibas, y la fila aparece en la tabla `exam_progress` del Postgres.
 
 ## Contraseña del maestro
 
@@ -37,5 +39,5 @@ El panel del maestro (lista de alumnos y resultados guardados) está protegido c
 
 ## Notas honestas
 
-- Los resultados y la lista de alumnos se guardan en Postgres vía `DATABASE_URL` (handlers en `server/src/privileged.ts`, esquema en `postgres/0001_initial.sql`). Sin `DATABASE_URL` configurada, el examen se puede resolver y calificar en pantalla, pero el resultado no se guarda y el panel del maestro no puede leer la lista ni los resultados.
+- Los resultados, la lista de alumnos y el avance se guardan en Postgres vía `DATABASE_URL` (handlers en `server/src/privileged.ts`, esquema en `postgres/0001_initial.sql`). En Railway los ejecuta `server/serve-railway.ts`, que despacha `POST /actions` a esos mismos handlers dentro del contenedor; los `200` de los Network Logs no bastan como prueba — antes también daban 200 devolviendo `index.html`. Sin `DATABASE_URL` configurada, el examen se puede resolver y calificar en pantalla, pero el resultado no se guarda y el panel del maestro no puede leer la lista ni los resultados.
 - La unicidad por alumno no depende del servidor: la variante (orden de preguntas, opciones y números de la hoja) se genera en el navegador a partir de las iniciales del alumno, así que funciona igual en ambos despliegues.
