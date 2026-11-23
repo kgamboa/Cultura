@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+@import "tailwindcss";
+@import "tailwindcss-safe-area";
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 28px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 36px;
+  --font-sans: "Sora", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #F7F8F5;
+  --surface: #ffffff;
+  --text: #1A2E22;
+  --dim: #5B6B60;
+  --border: #D9E2DC;
+  --accent: #217346;
+  --accent-dark: #185C37;
+  --amber: #E8A317;
+  --coral: #D64541;
+  --yellow-cell: #FFF3B0;
+  --radius: 14px;
+  --space-surface: var(--surface);
+  --space-surface-alt: #EFF4F0;
+  --space-muted: var(--dim);
+  --space-border: var(--border);
+  --space-accent: var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121714;
+    --surface: #1C2420;
+    --text: #EAF0EB;
+    --dim: #9AA99E;
+    --border: #2E3A32;
+    --accent: #3CB371;
+    --yellow-cell: #4A3F14;
+  }
+}
+@layer base {
+  button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.25rem; }
+  body { font-family: var(--font-sans); }
+}
