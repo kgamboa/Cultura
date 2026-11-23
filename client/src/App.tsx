@@ -119,22 +119,33 @@ const NEW_QUESTIONS: BaseQ[] = [
   { id: "b2-bucle", topic: "Algoritmos", q: "¿Qué ocurre si una instrucción de repetición (bucle) no tiene una condición de salida o parada?", options: ["La computadora imprime un reporte en papel.", "El programa se cierra inmediatamente con éxito.", "El programa se queda atrapado en un ciclo infinito.", "Se convierte automáticamente en una hoja de cálculo."], correct: 2, expl: "Todo ciclo debe tener una condición que le indique cuándo detenerse; de lo contrario, continuará repitiéndose sin parar." },
   { id: "b2-rombo", topic: "Algoritmos", q: "En un diagrama de flujo estándar, ¿qué figura geométrica se utiliza comúnmente para representar una toma de decisión o pregunta?", options: ["Un círculo.", "Un rectángulo.", "Un rombo.", "Una estrella."], correct: 2, expl: "El rombo representa una decisión con dos salidas posibles (generalmente \"Sí\" o \"No\")." },
   /* Reactivos "al revés": se dan los datos y la fórmula, y hay que elegir el resultado que genera */
-  { id: "rev-suma", topic: "Resultado de fórmulas", q: "En B2 hay 12, en B3 hay 25, en B4 hay 18 y en B5 hay 30. ¿Qué resultado da la fórmula =SUMA(B2:B5)?", cells: { B2: "12", B3: "25", B4: "18", B5: "30", B6: "=SUMA(B2:B5)" }, options: ["85", "21.25", "30", "42"], correct: 0, expl: "SUMA agrega todas las celdas del rango: 12 + 25 + 18 + 30 = 85. (21.25 sería el promedio y 30 el valor máximo.)" },
+  { id: "rev-suma", topic: "Resultado de fórmulas", q: "En B2 hay 15, en B3 hay 20, la celda B4 está vacía y en B5 hay 25. ¿Qué resultado da la fórmula =SUMA(B2:B5)?", cells: { B2: "15", B3: "20", B4: "", B5: "25", B6: "=SUMA(B2:B5)" }, options: ["60", "20", "25", "35"], correct: 0, expl: "SUMA ignora la celda vacía: suma solo los números que hay, 15 + 20 + 25 = 60. La B4 está vacía y no aporta nada. (20 sería el promedio de los tres datos y 25 el valor máximo.)" },
   { id: "rev-promedio", topic: "Resultado de fórmulas", q: "En B2 hay 10, en B3 hay 20, en B4 hay 30 y en B5 hay 40. ¿Qué resultado da la fórmula =PROMEDIO(B2:B5)?", cells: { B2: "10", B3: "20", B4: "30", B5: "40", B6: "=PROMEDIO(B2:B5)" }, options: ["100", "25", "40", "10"], correct: 1, expl: "PROMEDIO suma el rango y divide entre cuántos datos hay: (10 + 20 + 30 + 40) ÷ 4 = 100 ÷ 4 = 25. (100 sería la suma.)" },
   { id: "rev-max", topic: "Resultado de fórmulas", q: "En B2 hay 45, en B3 hay 12, en B4 hay 78 y en B5 hay 33. ¿Qué resultado da la fórmula =MAX(B2:B5)?", cells: { B2: "45", B3: "12", B4: "78", B5: "33", B6: "=MAX(B2:B5)" }, options: ["168", "12", "78", "42"], correct: 2, expl: "MAX devuelve el valor más grande del rango: entre 45, 12, 78 y 33, el mayor es 78. (168 sería la suma y 12 el mínimo.)" },
   { id: "rev-min", topic: "Resultado de fórmulas", q: "En B2 hay 25, en B3 hay 8, en B4 hay 40 y en B5 hay 17. ¿Qué resultado da la fórmula =MIN(B2:B5)?", cells: { B2: "25", B3: "8", B4: "40", B5: "17", B6: "=MIN(B2:B5)" }, options: ["40", "8", "90", "22.5"], correct: 1, expl: "MIN devuelve el valor más chico del rango: entre 25, 8, 40 y 17, el menor es 8. (40 sería el máximo y 90 la suma.)" },
-  { id: "rev-contar", topic: "Resultado de fórmulas", q: "En B2 hay 15, en B3 hay 22, en B4 hay 9 y en B5 hay 31. ¿Qué resultado da la fórmula =CONTAR(B2:B5)?", cells: { B2: "15", B3: "22", B4: "9", B5: "31", B6: "=CONTAR(B2:B5)" }, options: ["77", "19.25", "4", "31"], correct: 2, expl: "CONTAR no suma: cuenta cuántas celdas tienen números. Hay 4 celdas con número (B2, B3, B4 y B5), así que el resultado es 4. (77 sería la suma.)" },
+  { id: "rev-contar", topic: "Resultado de fórmulas", q: "En B2 hay 15, en B3 hay 22, la celda B4 está vacía y en B5 hay 31. ¿Qué resultado da la fórmula =CONTAR(B2:B5)?", cells: { B2: "15", B3: "22", B4: "", B5: "31", B6: "=CONTAR(B2:B5)" }, options: ["68", "4", "3", "31"], correct: 2, expl: "CONTAR no suma: cuenta solo las celdas que tienen números. B2, B3 y B5 tienen número, pero B4 está vacía y no cuenta, así que el resultado es 3, no 4. (68 sería la suma y 31 el valor máximo.)" },
   { id: "rev-suma-parcial", topic: "Resultado de fórmulas", q: "En B2 hay 14, en B3 hay 20, en B4 hay 26 y en B5 hay 11. ¿Qué resultado da la fórmula =B2+B4?", cells: { B2: "14", B3: "20", B4: "26", B5: "11", B6: "=B2+B4" }, options: ["71", "34", "37", "40"], correct: 3, expl: "La fórmula suma solo dos celdas sueltas: B2 + B4 = 14 + 26 = 40. No incluye B3 ni B5. (71 sería sumar todo el rango B2:B5.)" },
   { id: "rev-suma-precios", topic: "Resultado de fórmulas", q: "En D2 hay 120, en D3 hay 85, en D4 hay 200 y en D5 hay 95 (son precios). ¿Qué resultado da la fórmula =SUMA(D2:D5)?", cells: { D2: "120", D3: "85", D4: "200", D5: "95", D6: "=SUMA(D2:D5)" }, options: ["125", "500", "200", "380"], correct: 1, expl: "SUMA agrega los cuatro precios: 120 + 85 + 200 + 95 = 500. (125 sería el promedio y 200 el precio mayor.)" },
   { id: "rev-descuento", topic: "Resultado de fórmulas", q: "En D2 hay 400 (un precio) y en E2 hay 0.25 (un descuento del 25%). ¿Qué resultado da la fórmula =D2*(1-E2)? Es el precio ya con el descuento aplicado.", cells: { D2: "400", E2: "0.25", F2: "=D2*(1-E2)" }, options: ["100", "300", "500", "375"], correct: 1, expl: "1 − 0.25 = 0.75, y 400 × 0.75 = 300: es lo que se paga tras quitar el 25%. (100 sería solo el descuento en pesos, sin restarlo.)" },
-  { id: "rev-concatenar", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Carlos\" y en B2 está escrito \"Ruiz\". ¿Qué resultado da la fórmula =CONCATENAR(A2;\" \";B2)?", cells: { A2: "Carlos", B2: "Ruiz", C2: "=CONCATENAR(A2;\" \";B2)" }, options: ["CarlosRuiz", "Ruiz Carlos", "Carlos Ruiz", "Carlos+Ruiz"], correct: 2, expl: "CONCATENAR une los textos en orden y el \" \" del centro agrega el espacio: \"Carlos\" + \" \" + \"Ruiz\" = Carlos Ruiz." },
-  { id: "rev-concatenar-sin-espacio", topic: "Resultado de fórmulas", q: "En A2 está escrito \"María\" y en B2 está escrito \"López\". ¿Qué resultado da la fórmula =CONCATENAR(A2;B2)?", cells: { A2: "María", B2: "López", C2: "=CONCATENAR(A2;B2)" }, options: ["María López", "MaríaLópez", "LópezMaría", "María+López"], correct: 1, expl: "CONCATENAR une los textos tal cual y esta fórmula no incluye ningún \" \" en el centro, así que el resultado sale pegado, sin espacio: \"María\" + \"López\" = MaríaLópez." },
-  { id: "rev-concatenar-error", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Ana\" y en B2 está escrito \"Paz\". Escribes la fórmula =CONCATENR(A2;B2) (fíjate bien en el nombre de la función). ¿Qué pasa en Excel?", cells: { A2: "Ana", B2: "Paz", C2: "#¿NOMBRE?" }, bar: "=CONCATENR(A2;B2)", options: ["Ana Paz", "AnaPaz", "#¿NOMBRE?", "Excel lo corrige solo y une los textos"], correct: 2, expl: "El nombre de la función está mal escrito: CONCATENR no existe (la correcta es CONCATENAR). Excel no reconoce ese nombre y muestra el error #¿NOMBRE?, así que no une ningún texto." },
+  { id: "rev-concatenar", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Carlos\", en B2 está escrito \"Ruiz\" y en C2 está escrito \"Mora\". ¿Qué resultado da la fórmula =CONCATENAR(A2;\" \";B2;\" \";C2)?", cells: { A2: "Carlos", B2: "Ruiz", C2: "Mora", D2: "=CONCATENAR(A2;\" \";B2;\" \";C2)" }, options: ["CarlosRuizMora", "Mora Ruiz Carlos", "Carlos Ruiz Mora", "Carlos+Ruiz+Mora"], correct: 2, expl: "CONCATENAR une los tres textos en orden y cada \" \" agrega un espacio: \"Carlos\" + \" \" + \"Ruiz\" + \" \" + \"Mora\" = Carlos Ruiz Mora." },
+  { id: "rev-concatenar-sin-espacio", topic: "Resultado de fórmulas", q: "En A2 está escrito \"María\", en B2 está escrito \"López\" y en C2 está escrito \"Vega\". ¿Qué resultado da la fórmula =CONCATENAR(A2;B2;C2)?", cells: { A2: "María", B2: "López", C2: "Vega", D2: "=CONCATENAR(A2;B2;C2)" }, options: ["María López Vega", "MaríaLópezVega", "VegaLópezMaría", "María+López+Vega"], correct: 1, expl: "CONCATENAR une los tres textos tal cual y esta fórmula no incluye ningún \" \" entre ellos, así que el resultado sale todo pegado, sin espacios: \"María\" + \"López\" + \"Vega\" = MaríaLópezVega." },
+  { id: "rev-concatenar-error", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Ana\", en B2 está escrito \"Paz\" y en C2 está escrito \"León\". Escribes la fórmula =CONCATENR(A2;B2;C2) (fíjate bien en el nombre de la función). ¿Qué pasa en Excel?", cells: { A2: "Ana", B2: "Paz", C2: "León", D2: "#¿NOMBRE?" }, bar: "=CONCATENR(A2;B2;C2)", options: ["Ana Paz León", "AnaPazLeón", "#¿NOMBRE?", "Excel lo corrige solo y une los textos"], correct: 2, expl: "El nombre de la función está mal escrito: CONCATENR no existe (la correcta es CONCATENAR). Excel no reconoce ese nombre y muestra el error #¿NOMBRE?, así que no une ninguno de los tres textos." },
   { id: "rev-si", topic: "Resultado de fórmulas", q: "En D2 hay 150. ¿Qué resultado da la fórmula =SI(D2>=100;\"Caro\";\"Barato\")?", cells: { D2: "150", E2: "=SI(D2>=100;\"Caro\";\"Barato\")" }, options: ["Caro", "Barato", "VERDADERO", "150"], correct: 0, expl: "La condición D2>=100 se cumple (150 sí es 100 o más), así que SI devuelve el primer texto: \"Caro\". Si D2 valiera menos de 100, daría \"Barato\"." },
   { id: "rev-importe", topic: "Resultado de fórmulas", q: "En B2 hay 6 (una cantidad) y en C2 hay 45 (un precio unitario). ¿Qué resultado da la fórmula =B2*C2?", cells: { B2: "6", C2: "45", D2: "=B2*C2" }, options: ["51", "39", "7.5", "270"], correct: 3, expl: "El importe es cantidad por precio: 6 × 45 = 270. (51 sería sumarlos y 7.5 dividirlos.)" },
   { id: "rev-suma-entre-contar", topic: "Resultado de fórmulas", q: "En B2 hay 8, en B3 hay 12, en B4 hay 20 y en B5 hay 16. ¿Qué resultado da la fórmula =SUMA(B2:B5)/CONTAR(B2:B5)?", cells: { B2: "8", B3: "12", B4: "20", B5: "16", B6: "=SUMA(B2:B5)/CONTAR(B2:B5)" }, options: ["56", "14", "4", "20"], correct: 1, expl: "Primero las funciones: SUMA da 8 + 12 + 20 + 16 = 56 y CONTAR da 4. Luego la división: 56 ÷ 4 = 14. Es otra forma de calcular el promedio." },
   { id: "rev-rango", topic: "Resultado de fórmulas", q: "En B2 hay 33, en B3 hay 7, en B4 hay 58 y en B5 hay 21. ¿Qué resultado da la fórmula =MAX(B2:B5)-MIN(B2:B5)?", cells: { B2: "33", B3: "7", B4: "58", B5: "21", B6: "=MAX(B2:B5)-MIN(B2:B5)" }, options: ["58", "7", "51", "119"], correct: 2, expl: "MAX da 58 y MIN da 7; la resta es 58 − 7 = 51. Ese resultado se conoce como el rango de los datos: la distancia entre el mayor y el menor." },
   { id: "rev-iva", topic: "Resultado de fórmulas", q: "En B2 hay 350 (un precio sin IVA). ¿Qué resultado da la fórmula =B2*0.16? Es el IVA del 16% en pesos.", cells: { B2: "350", C2: "=B2*0.16" }, options: ["406", "56", "5.6", "294"], correct: 1, expl: "El IVA es el precio por la tasa: 350 × 0.16 = 56. (406 sería el precio ya con el IVA incluido: 350 + 56.)" },
+  /* Referencias al copiar: la tablita muestra la fórmula original y la celda destino con ¿? */
+  { id: "ref-rel-abajo", topic: "Referencias", q: "En C2 está la fórmula =A2*B2 (cantidad por precio). La copias hacia abajo, a la celda C3. ¿Qué fórmula queda en C3?", cells: { A2: "5", B2: "20", C2: "=A2*B2", A3: "8", B3: "15", C3: "¿?" }, options: ["=A3*B3", "=A2*B2", "=A3*B2", "=$A$3*$B$3"], correct: 0, expl: "Las referencias son relativas: al copiar una fila hacia abajo, cada fila sube 1. A2 pasa a A3 y B2 pasa a B3, así que en C3 queda =A3*B3." },
+  { id: "ref-rel-derecha", topic: "Referencias", q: "En B2 está la fórmula =A2+10. La copias hacia la derecha, a la celda C2. ¿Qué fórmula queda en C2?", cells: { A2: "30", B2: "=A2+10", C2: "¿?" }, options: ["=B2+10", "=A2+10", "=B3+10", "=$A$2+10"], correct: 0, expl: "Al copiar hacia la derecha se mueve la columna, no la fila: A2 pasa a B2 y la fila 2 se queda igual. En C2 queda =B2+10." },
+  { id: "ref-abs-abajo", topic: "Referencias", q: "La tasa del IVA está en una sola celda, E2 (0.16). En C2 está la fórmula =A2*$E$2 y la copias hacia abajo, a la celda C3. ¿Qué fórmula queda en C3?", cells: { A2: "100", C2: "=A2*$E$2", E2: "0.16", A3: "250", C3: "¿?" }, options: ["=A3*$E$2", "=A3*$E$3", "=A3*E2", "=A2*$E$2"], correct: 0, expl: "El precio es relativo y sí se mueve (A2 → A3), pero $E$2 es absoluta: el $ fija la columna y la fila, así que todas las copias siguen usando la misma tasa de E2. Sin el $, apuntaría a E3, E4… y daría error o cero." },
+  { id: "ref-abs-derecha", topic: "Referencias", q: "En B1 hay un bono fijo de 50. En C2 está la fórmula =A2+$B$1 y la copias hacia la derecha, a la celda D2. ¿Qué fórmula queda en D2?", cells: { B1: "50", A2: "200", B2: "300", C2: "=A2+$B$1", D2: "¿?" }, options: ["=B2+$B$1", "=B2+$B$2", "=B2+B1", "=A2+$B$1"], correct: 0, expl: "Al copiar a la derecha, la referencia relativa A2 se mueve a B2, pero $B$1 es absoluta: ni la columna ni la fila cambian, así que el bono sigue saliendo de B1." },
+  { id: "ref-mixta-col-derecha", topic: "Referencias", q: "En C2 está la fórmula =$A2*2, que duplica el dato de la columna A. La copias hacia la derecha, a la celda D2. ¿Qué fórmula queda en D2?", cells: { A2: "7", C2: "=$A2*2", D2: "¿?" }, options: ["=$A2*2", "=B2*2", "=$B2*2", "=$A3*2"], correct: 0, expl: "$A2 es una referencia mixta: el $ está antes de la A, así que la columna A queda fija y no se mueve aunque copies hacia la derecha. La fórmula queda igual: =$A2*2. Sin el $, habría pasado a B2." },
+  { id: "ref-mixta-col-abajo", topic: "Referencias", q: "En C2 está la fórmula =$A2+B2. La copias hacia abajo, a la celda C3. ¿Qué fórmula queda en C3?", cells: { A2: "10", B2: "4", C2: "=$A2+B2", A3: "12", B3: "6", C3: "¿?" }, options: ["=$A3+B3", "=$A2+B3", "=$A$2+B3", "=A3+B3"], correct: 0, expl: "En $A2 el $ solo fija la columna A; la fila queda libre y al copiar hacia abajo sí se mueve: A2 pasa a A3. B2 también es relativa y pasa a B3. Queda =$A3+B3." },
+  { id: "ref-mixta-fila-abajo", topic: "Referencias", q: "El precio de la fila 1 (B1 = 100) se usa en varias filas. En C3 está la fórmula =A3*B$1 y la copias hacia abajo, a la celda C4. ¿Qué fórmula queda en C4?", cells: { B1: "100", A3: "3", C3: "=A3*B$1", A4: "5", C4: "¿?" }, options: ["=A4*B$1", "=A4*B$2", "=A4*B1", "=A$4*B$1"], correct: 0, expl: "B$1 es mixta: el $ está antes del 1, así que la fila 1 queda fija y no baja al copiar (sin $, habría pasado a B2 y luego B3). La cantidad sí es relativa: A3 pasa a A4. Queda =A4*B$1." },
+  { id: "ref-mixta-fila-derecha", topic: "Referencias", q: "En C2 está la fórmula =B$1*2, que duplica el dato de la fila 1. La copias hacia la derecha, a la celda D2. ¿Qué fórmula queda en D2?", cells: { B1: "8", C1: "9", C2: "=B$1*2", D2: "¿?" }, options: ["=C$1*2", "=B$1*2", "=C$2*2", "=C1*2"], correct: 0, expl: "En B$1 el $ solo fija la fila; la columna queda libre y al copiar hacia la derecha sí se mueve: B pasa a C. Queda =C$1*2, que duplica el 9 de C1." },
+  { id: "ref-tipo-mixta-col", topic: "Referencias", q: "En la fórmula de B2 se usa la referencia $A1. ¿Qué tipo de referencia es y qué parte queda fija?", cells: { A1: "50", B2: "=$A1*2" }, options: ["Mixta: fija la columna A y la fila puede cambiar al copiar hacia abajo", "Absoluta: no cambian ni la columna ni la fila", "Relativa: cambian la columna y la fila", "Mixta: fija la fila 1 y la columna puede cambiar al copiar hacia la derecha"], correct: 0, expl: "El $ va pegado a lo que se fija. En $A1 el $ está antes de la letra, así que solo la columna A está fija: es una referencia mixta (parcial). La fila 1 queda libre y cambia al copiar hacia abajo." },
+  { id: "ref-practica-tasa", topic: "Referencias", q: "Tienes precios en A2, A3 y A4, y la tasa del IVA (0.16) está escrita en una sola celda: C1. En B2 vas a escribir la fórmula del IVA de cada precio y copiarla hacia abajo hasta B4. ¿Qué fórmula debes escribir en B2 para que todas las filas usen la misma tasa de C1?", cells: { C1: "0.16", A2: "100", B2: "¿?", A3: "200", A4: "350" }, options: ["=A2*$C$1", "=A2*C1", "=A2*$C1", "=$A$2*C$1"], correct: 0, expl: "La tasa debe ser absoluta, $C$1, para que al copiar hacia abajo siga apuntando a C1. Con C1 a secas pasaría a C2 y C3 (vacías). $C1 solo fija la columna: al bajar, la fila también se movería. Y el precio A2 debe quedar relativo para que cambie en cada fila." },
 ];
 
 /* Reactivos de teoría cuyos números/nombres se generan de la variante (T3, T4, T7, T9, T12 de la propuesta) */
@@ -161,6 +172,12 @@ function genDynamicQuestions(rng: () => number): BaseQ[] {
   const t12: BaseQ = { id: "t12-parentesis", topic: "Operadores", q: `¿Qué resultado da la fórmula =(${a}+${b})*${c}?`, options: [String(a + b * c), String((a + b) * c), String(a + b + c), String(a * b * c)], correct: 1, expl: `Los paréntesis obligan a sumar primero: (${a}+${b}) = ${a + b}, y ${a + b} × ${c} = ${(a + b) * c}. Sin paréntesis, =${a}+${b}*${c} daría ${a + b * c} porque primero se multiplica.` };
   return [t3, t4, t7, t9, t12];
 }
+
+/* Banco completo de teoría, solo para revisión del maestro: las preguntas
+   fijas (base + nuevas) y un ejemplo fijo de cada reactivo dinámico, cuyos
+   números y nombres cambian en la variante de cada alumno. */
+const THEORY_BANK: BaseQ[] = [...BASE_QUESTIONS, ...NEW_QUESTIONS];
+const DYNAMIC_SAMPLE: BaseQ[] = genDynamicQuestions(mulberry32(20261122));
 /* ============ Variante única por alumno ============ */
 type ShuffledQ = { id: string; topic: string; q: string; options: string[]; correctIdx: number; expl: string; cells?: Record<string, string>; bar?: string };
 type Variant = {
@@ -517,6 +534,32 @@ function MiniSheet({ cells, bar, resultCell }: { cells: Record<string, string>; 
   );
 }
 
+/* Tarjeta de solo lectura de una pregunta del banco, para el panel del
+   maestro: texto, tablita si la tiene, opciones con la correcta marcada y
+   su explicación. No se puede contestar desde aquí. */
+function BankQuestionCard({ q, num }: { q: BaseQ; num: number }) {
+  return (
+    <article className="rounded-xl border px-3 py-3 text-sm" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
+      <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--dim)" }}>{num} · {q.topic}</p>
+      {q.cells && <div className="mt-2"><MiniSheet cells={q.cells} bar={q.bar} /></div>}
+      <p className="mt-1 font-semibold leading-snug">{q.q}</p>
+      <ul className="mt-2 space-y-1.5">
+        {q.options.map((opt, oi) => {
+          const isCorrect = oi === q.correct;
+          return (
+            <li key={oi} className="flex items-start gap-2 rounded-lg px-2.5 py-1.5" style={{ background: isCorrect ? "#EFF6F1" : "var(--surface)", border: isCorrect ? "1.5px solid #217346" : "1px solid var(--border)", color: isCorrect ? "#185C37" : "var(--text)" }}>
+              <span className="font-mono text-xs font-bold" style={{ color: isCorrect ? "#185C37" : "var(--dim)" }}>{String.fromCharCode(65 + oi)}</span>
+              <span className="flex-1">{opt}</span>
+              {isCorrect && <span className="shrink-0 text-xs font-bold" style={{ color: "#185C37" }}>✓ Correcta</span>}
+            </li>
+          );
+        })}
+      </ul>
+      {q.expl && <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--dim)" }}><strong style={{ color: "var(--text)" }}>Explicación:</strong> {q.expl}</p>}
+    </article>
+  );
+}
+
 export function App() {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("intro");
@@ -542,10 +585,16 @@ export function App() {
   // Borrado de resultados en el panel: confirmación en línea y mensajes.
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [resultMsg, setResultMsg] = useState("");
+  // Banco de teoría en el panel: la lista completa solo se despliega cuando
+  // el maestro la pide, para no alargar el panel de entrada.
+  const [showBank, setShowBank] = useState(false);
   // Avance guardado: si el alumno vuelve antes de terminar, continúa donde
   // se quedó. finishedRef evita que un guardado tardío recree el avance
   // después de enviar el examen.
   const [resumed, setResumed] = useState(false);
+  // Una pregunta a la vez: índice del reactivo actual (0..29). Primero van
+  // los 10 ejercicios prácticos y luego las 20 preguntas de teoría.
+  const [step, setStep] = useState(0);
   const finishedRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
 
@@ -647,21 +696,29 @@ export function App() {
     let restoredAnswers: Record<string, number> = {};
     let restoredFormulas: Record<string, string> = {};
     let restoredCell = variant.practicalCells[0] ?? "B7";
+    let restoredStep = 0;
     let didResume = false;
     try {
       const prog = await api.getProgress({ initials: ini });
       if (prog.dbReady && prog.progress && prog.progress.variantCode === variant.code) {
-        const parsed = JSON.parse(prog.progress.state) as { answers?: unknown; formulas?: unknown; selectedCell?: unknown };
+        const parsed = JSON.parse(prog.progress.state) as { answers?: unknown; formulas?: unknown; selectedCell?: unknown; step?: unknown };
         if (parsed.answers && typeof parsed.answers === "object") restoredAnswers = parsed.answers as Record<string, number>;
         if (parsed.formulas && typeof parsed.formulas === "object") restoredFormulas = parsed.formulas as Record<string, string>;
         if (typeof parsed.selectedCell === "string" && variant.practicalCells.includes(parsed.selectedCell)) restoredCell = parsed.selectedCell;
+        const totalStepsSaved = variant.questions.length + variant.practicalCells.length;
+        if (typeof parsed.step === "number" && Number.isFinite(parsed.step)) restoredStep = Math.min(Math.max(Math.floor(parsed.step), 0), totalStepsSaved - 1);
+        // Si vuelve a un ejercicio práctico, la celda activa es la de ese ejercicio.
+        if (restoredStep < variant.practicalCells.length) {
+          const taskCell = PRACTICAL.filter((x) => variant.practicalCells.includes(x.cell))[restoredStep]?.cell;
+          if (taskCell) restoredCell = taskCell;
+        }
         didResume = Object.keys(restoredAnswers).length > 0 || Object.values(restoredFormulas).some((f) => f.trim().length > 0);
       }
     } catch { /* sin avance recuperable: se empieza de cero */ }
     finishedRef.current = false;
     setResumed(didResume);
     setSession({ name, initials: ini, variant });
-    setAnswers(restoredAnswers); setFormulas(restoredFormulas); setGrade(null); setSelectedCell(restoredCell);
+    setAnswers(restoredAnswers); setFormulas(restoredFormulas); setGrade(null); setSelectedCell(restoredCell); setStep(restoredStep);
     setPhase("exam");
   }
 
@@ -671,13 +728,13 @@ export function App() {
   useEffect(() => {
     if (phase !== "exam" || !session || finishedRef.current) return;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    const snap = { initials: session.initials, name: session.name, code: session.variant.code, state: JSON.stringify({ answers, formulas, selectedCell }) };
+    const snap = { initials: session.initials, name: session.name, code: session.variant.code, state: JSON.stringify({ answers, formulas, selectedCell, step }) };
     saveTimerRef.current = window.setTimeout(() => {
       if (finishedRef.current) return;
       void api.saveProgress({ initials: snap.initials, studentName: snap.name, variantCode: snap.code, state: snap.state }).catch(() => undefined);
     }, 800);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
-  }, [phase, session, answers, formulas, selectedCell]);
+  }, [phase, session, answers, formulas, selectedCell, step]);
 
   // Valores de la hoja para la variante activa
   const sheetValues = useMemo<Record<string, number>>(() => {
@@ -906,6 +963,23 @@ export function App() {
                   ))}
                 </div>
               </section>
+
+              <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Banco de preguntas de teoría">
+                <h2 className="text-lg font-bold">Banco de preguntas de teoría ({THEORY_BANK.length + DYNAMIC_SAMPLE.length})</h2>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--dim)" }}>Solo para revisarlas: aquí están todas las preguntas del banco, con su tablita cuando la tienen, sus opciones y la respuesta correcta marcada. De este banco salen las 20 preguntas de teoría de cada examen; desde esta lista no se contesta nada.</p>
+                <button type="button" onClick={() => setShowBank((s) => !s)} aria-expanded={showBank} className="mt-3 rounded-xl px-4 py-2.5 text-sm font-bold text-white" style={{ background: "#217346" }}>{showBank ? "Ocultar las preguntas" : `Ver las ${THEORY_BANK.length + DYNAMIC_SAMPLE.length} preguntas`}</button>
+                {showBank && (
+                  <div className="mt-4 space-y-3">
+                    {THEORY_BANK.map((q, i) => (
+                      <BankQuestionCard key={q.id} q={q} num={i + 1} />
+                    ))}
+                    <p className="pt-1 text-sm font-semibold">Preguntas que se generan por variante <span className="font-normal" style={{ color: "var(--dim)" }}>(sus números y nombres cambian en el examen de cada alumno; aquí se muestra un ejemplo de cada una)</span></p>
+                    {DYNAMIC_SAMPLE.map((q, i) => (
+                      <BankQuestionCard key={q.id} q={q} num={THEORY_BANK.length + i + 1} />
+                    ))}
+                  </div>
+                )}
+              </section>
             </>
           )}
 
@@ -1009,6 +1083,44 @@ export function App() {
     return typeof n === "number" ? fmtNum(n) : "";
   };
 
+  // Una pregunta a la vez: primero los ejercicios prácticos (con la hoja) y
+  // luego las preguntas de teoría, en el mismo orden en que ya se presentaban.
+  const totalSteps = selectedPractical.length + v.questions.length;
+  const theoryIndex = step - selectedPractical.length;
+  const currentTask: PracTask | undefined = step < selectedPractical.length ? selectedPractical[step] : undefined;
+  function goToStep(n: number) {
+    const target = Math.min(Math.max(n, 0), totalSteps - 1);
+    setStep(target);
+    const t = selectedPractical[target];
+    if (t) setSelectedCell(t.cell);
+  }
+
+  // Hoja recortada al ejercicio actual: solo se muestran los datos que ese
+  // ejercicio ocupa (sus celdas de entrada, su etiqueta y los encabezados de
+  // la tabla principal cuando aplica) y su propia celda amarilla. Los datos
+  // y las celdas amarillas de los demás ejercicios no aparecen.
+  const LABEL_CELL: Record<string, string> = { B7: "A7", B8: "A8", B9: "A9", B10: "A10", B11: "A11", D7: "C7", D13: "A13", D14: "A14", C16: "A16", D17: "A17" };
+  const visibleSet = new Set<string>();
+  if (currentTask) {
+    const sheet = expectedSheetFor(currentTask.cell, v);
+    if (sheet) for (const addr of Object.keys(sheet.cells)) visibleSet.add(addr);
+    const lc = LABEL_CELL[currentTask.cell];
+    if (lc && labels[lc]) visibleSet.add(lc);
+    for (const addr of [...visibleSet]) {
+      const m = addr.match(/^([A-Z]+)(\d+)$/);
+      if (!m) continue;
+      const col = m[1] as string;
+      const row = Number(m[2]);
+      if (row >= 2 && row <= 7) {
+        if (labels[`${col}1`]) visibleSet.add(`${col}1`);
+        if (col === "B" && row <= 5 && labels[`A${row}`]) visibleSet.add(`A${row}`);
+      }
+    }
+    if ([...visibleSet].some((a) => /^A[2-5]$/.test(a)) && labels["A1"]) visibleSet.add("A1");
+  }
+  const gridCols = cols.filter((c) => [...visibleSet].some((a) => a.replace(/[0-9]/g, "") === c));
+  const gridRows = rows.filter((r) => [...visibleSet].some((a) => Number(a.replace(/[^0-9]/g, "")) === r));
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--text)" }}>
       <SafeAreaTopScrim backgroundColor="var(--bg)" />
@@ -1026,10 +1138,20 @@ export function App() {
         {resumed && (
           <p role="status" className="mb-3 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#EFF6F1", color: "#185C37" }}>Continuaste donde te quedaste: tus respuestas y fórmulas anteriores ya están cargadas. Tu avance se guarda solo mientras contestas.</p>
         )}
-        {/* PRÁCTICA primero en móvil: la hoja es el héroe */}
-        <section aria-label="Práctica en hoja simulada">
-          <h2 className="text-xl font-extrabold">Parte 1 · Práctica en la hoja</h2>
-          <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>{selectedPractical.length} ejercicios prácticos (1 punto cada uno). Toca una celda amarilla y escribe tu fórmula en la barra de fórmulas. El resultado se calcula solo.</p>
+        <p className="text-sm font-bold" aria-live="polite">Pregunta {step + 1} de {totalSteps} <span className="font-normal" style={{ color: "var(--dim)" }}>· {currentTask ? "Práctica en la hoja" : "Teoría de opción múltiple"}</span></p>
+
+        {/* Una pregunta a la vez: el ejercicio práctico actual, con su hoja */}
+        {currentTask ? (
+        <section className="mt-3" aria-label="Práctica en hoja simulada">
+          <h2 className="text-xl font-extrabold">Práctica en la hoja</h2>
+          <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>Un ejercicio práctico (1 punto). Escribe su fórmula en la barra de fórmulas, en la celda amarilla indicada; el resultado se calcula solo.</p>
+
+          {/* Ejercicio práctico actual */}
+          <div className="mt-3 rounded-xl border-2 px-3 py-3" style={{ background: "var(--surface)", borderColor: "#217346" }}>
+            <p className="text-sm font-bold">{currentTask.title} <span className="ml-1 rounded-md px-1.5 py-0.5 font-mono text-xs text-white" style={{ background: "#217346" }}>{currentTask.cell}</span> <span className="font-normal" style={{ color: "var(--dim)" }}>(1 punto)</span></p>
+            <p className="mt-0.5 text-sm" style={{ color: "var(--dim)" }}>{currentTask.instruction(v)}</p>
+            {(formulas[currentTask.cell] ?? "").trim() && <p className="mt-1 font-mono text-xs" style={{ color: "var(--dim)" }}>{`Tu fórmula: ${(formulas[currentTask.cell] ?? "").trim()} → ${resultTextFor(currentTask, (formulas[currentTask.cell] ?? "").trim())}`}</p>}
+          </div>
 
           {/* Barra de fórmulas */}
           <div className="mt-3 flex items-stretch gap-2">
@@ -1047,28 +1169,30 @@ export function App() {
               <thead>
                 <tr>
                   <th className="border px-1 py-1.5 text-xs" style={{ borderColor: "var(--border)", background: "#E7EFE9", width: 30 }} aria-label="Esquina"></th>
-                  {cols.map((c) => <th key={c} className="border px-1 py-1.5 text-xs font-bold" style={{ borderColor: "var(--border)", background: selectedCell.startsWith(c) ? "#C6E7D2" : "#E7EFE9" }}>{c}</th>)}
+                  {gridCols.map((c) => <th key={c} className="border px-1 py-1.5 text-xs font-bold" style={{ borderColor: "var(--border)", background: selectedCell.startsWith(c) ? "#C6E7D2" : "#E7EFE9" }}>{c}</th>)}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {gridRows.map((r) => (
                   <tr key={r}>
-                    <th className="border px-1 py-1 text-xs font-bold" style={{ borderColor: "var(--border)", background: selectedCell === `${selectedCell[0]}${r}` || selectedCell.endsWith(String(r)) && r > 1 ? "#E7EFE9" : "#E7EFE9" }}>{r}</th>
-                    {cols.map((c) => {
+                    <th className="border px-1 py-1 text-xs font-bold" style={{ borderColor: "var(--border)", background: "#E7EFE9" }}>{r}</th>
+                    {gridCols.map((c) => {
                       const addr = `${c}${r}`;
-                      const editable = editableCells.includes(addr);
+                      const visible = visibleSet.has(addr);
+                      const editable = visible && editableCells.includes(addr);
                       const isSel = selectedCell === addr;
-                      const isHeader = r === 1;
+                      const isHeader = visible && r === 1;
+                      const content = visible ? displayFor(addr) : "";
                       return (
                         <td key={addr}>
-                          <button type="button" aria-label={`Celda ${addr}${editable ? ", editable" : ""}: ${displayFor(addr) || "vacía"}`} onClick={() => setSelectedCell(addr)}
+                          <button type="button" aria-label={`Celda ${addr}${editable ? ", editable" : ""}: ${content || "vacía"}`} onClick={() => setSelectedCell(addr)}
                             className="block h-10 w-full px-1 font-mono text-[13px]"
                             style={{
                               border: isSel ? "2px solid #217346" : "1px solid var(--border)",
                               background: editable ? "#FFF3B0" : isHeader ? "#F1F5F2" : "var(--surface)",
                               color: "var(--text)", fontWeight: isHeader ? 700 : 400, minHeight: 40,
                             }}>
-                            {displayFor(addr)}
+                            {content}
                           </button>
                         </td>
                       );
@@ -1078,33 +1202,18 @@ export function App() {
               </tbody>
             </table>
           </div>
-          <p className="mt-1.5 text-xs" style={{ color: "var(--dim)" }}>Las celdas amarillas son las que debes completar.</p>
+          <p className="mt-1.5 text-xs" style={{ color: "var(--dim)" }}>Solo se muestra lo de este ejercicio. La celda amarilla es la que debes completar.</p>
 
-          {/* Tareas prácticas */}
-          <div className="mt-4 space-y-2">
-            {selectedPractical.map((t, i) => {
-              const f = (formulas[t.cell] ?? "").trim();
-              return (
-                <button key={t.cell} type="button" onClick={() => setSelectedCell(t.cell)} aria-label={`Ir a la tarea ${t.title}, celda ${t.cell}`}
-                  className="w-full rounded-xl border px-3 py-3 text-left" style={{ background: "var(--surface)", borderColor: selectedCell === t.cell ? "#217346" : "var(--border)", borderWidth: selectedCell === t.cell ? 2 : 1 }}>
-                  <p className="text-sm font-bold">{i + 1}. {t.title} <span className="ml-1 rounded-md px-1.5 py-0.5 font-mono text-xs text-white" style={{ background: "#217346" }}>{t.cell}</span> <span className="font-normal" style={{ color: "var(--dim)" }}>(1 punto)</span></p>
-                  <p className="mt-0.5 text-sm" style={{ color: "var(--dim)" }}>{t.instruction(v)}</p>
-                  {f && <p className="mt-1 font-mono text-xs" style={{ color: "var(--dim)" }}>{`Tu fórmula: ${f} → ${resultTextFor(t, f)}`}</p>}
-                </button>
-              );
-            })}
-          </div>
         </section>
-
-        {/* TEORÍA */}
-        <section className="mt-8" aria-label="Teoría de opción múltiple">
-          <h2 className="text-xl font-extrabold">Parte 2 · Teoría</h2>
-          <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>{v.questions.length} preguntas de opción múltiple (1 punto cada una). El orden y las opciones son los de tu variante {v.code}.</p>
+        ) : (
+        <section className="mt-3" aria-label="Teoría de opción múltiple">
+          <h2 className="text-xl font-extrabold">Teoría</h2>
+          <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>Pregunta de opción múltiple (1 punto). Elige una opción y sigue con Siguiente; puedes volver con Anterior cuando quieras.</p>
           <div className="mt-3 space-y-3">
-            {v.questions.map((q, qi) => (
+            {v.questions.map((q, qi) => qi === theoryIndex ? (
               <fieldset key={q.id} className="rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
                 {q.cells && <MiniSheet cells={q.cells} bar={q.bar} />}
-                <p className="text-[15px] font-semibold leading-snug">{qi + 1}. {q.q}</p>
+                <p className="text-[15px] font-semibold leading-snug">{step + 1}. {q.q}</p>
                 <div className="mt-3 space-y-2" role="radiogroup" aria-label={`Opciones de la pregunta ${qi + 1}`}>
                   {q.options.map((opt, oi) => {
                     const selected = answers[q.id] === oi;
@@ -1119,14 +1228,28 @@ export function App() {
                   })}
                 </div>
               </fieldset>
-            ))}
+            ) : null)}
           </div>
         </section>
+        )}
 
-        <div className="mt-8 rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-          <p className="text-sm" style={{ color: "var(--dim)" }}>Al terminar se califica solo, en base a 30, y se guarda tu resultado con tus iniciales <strong style={{ color: "var(--text)" }}>{session.initials}</strong> y tu variante <strong style={{ color: "var(--text)" }}>{v.code}</strong>. Revisa: teoría {answeredCount}/{v.questions.length} respondidas, práctica {pracDone}/{v.practicalCells.length} fórmulas escritas.</p>
-          <button type="button" onClick={finishExam} className="mt-3 w-full rounded-xl py-3.5 text-base font-bold text-white" style={{ background: "#217346" }}>Terminar y calificar mi examen</button>
-        </div>
+        {/* Navegación entre preguntas */}
+        <nav className="mt-6 flex items-center gap-2" aria-label="Navegación entre preguntas">
+          <button type="button" disabled={step === 0} onClick={() => goToStep(step - 1)} className="rounded-xl border px-4 py-2.5 text-sm font-bold disabled:opacity-40" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>← Anterior</button>
+          <p className="flex-1 text-center text-sm font-bold">Pregunta {step + 1} de {totalSteps}</p>
+          {step < totalSteps - 1 ? (
+            <button type="button" onClick={() => goToStep(step + 1)} className="rounded-xl px-4 py-2.5 text-sm font-bold text-white" style={{ background: "#217346" }}>Siguiente →</button>
+          ) : (
+            <span className="text-sm font-semibold" style={{ color: "var(--dim)" }}>Última pregunta</span>
+          )}
+        </nav>
+
+        {step === totalSteps - 1 && (
+          <div className="mt-6 rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+            <p className="text-sm" style={{ color: "var(--dim)" }}>Al terminar se califica solo, en base a 30, y se guarda tu resultado con tus iniciales <strong style={{ color: "var(--text)" }}>{session.initials}</strong> y tu variante <strong style={{ color: "var(--text)" }}>{v.code}</strong>. Revisa: teoría {answeredCount}/{v.questions.length} respondidas, práctica {pracDone}/{v.practicalCells.length} fórmulas escritas.</p>
+            <button type="button" onClick={finishExam} className="mt-3 w-full rounded-xl py-3.5 text-base font-bold text-white" style={{ background: "#217346" }}>Terminar y calificar mi examen</button>
+          </div>
+        )}
       </main>
     </div>
   );
