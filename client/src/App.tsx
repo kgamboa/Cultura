@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaTopScrim } from "@hatch/space-sdk/client";
 import { api } from "./api";
@@ -36,7 +36,7 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
 const normInitials = (s: string) => s.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, "").slice(0, 8);
 
 /* ============ Preguntas base de teoría ============ */
-type BaseQ = { id: string; topic: string; q: string; options: string[]; correct: number; expl: string };
+type BaseQ = { id: string; topic: string; q: string; options: string[]; correct: number; expl: string; cells?: Record<string, string>; bar?: string };
 const BASE_QUESTIONS: BaseQ[] = [
   { id: "celda", topic: "Celdas y rangos", q: "¿Qué es una celda en Excel?", options: ["La intersección de una fila y una columna, donde escribes un dato", "Una fila completa de la hoja", "Un gráfico dentro de la hoja", "El nombre del archivo"], correct: 0, expl: "La celda es el cruce de una fila y una columna. Ahí va cada dato." },
   { id: "fila-col", topic: "Celdas y rangos", q: "¿Cómo se identifican las filas y las columnas?", options: ["Filas con letras y columnas con números", "Filas con números y columnas con letras", "Ambas con números", "Ambas con colores"], correct: 1, expl: "Las columnas van con letras (A, B, C…) y las filas con números (1, 2, 3…)." },
@@ -118,6 +118,23 @@ const NEW_QUESTIONS: BaseQ[] = [
   { id: "b2-condicional", topic: "Algoritmos", q: "¿Qué instrucción se utiliza en pseudocódigo cuando el programa debe elegir entre dos caminos según se cumpla o no una condición?", options: ["Repetir.", "Si ... Entonces ... Sino.", "Sumar.", "Borrar todo."], correct: 1, expl: "La estructura condicional evalúa si una condición es verdadera (por ejemplo: \"¿La calificación es mayor a 6?\") para decidir qué acción ejecutar." },
   { id: "b2-bucle", topic: "Algoritmos", q: "¿Qué ocurre si una instrucción de repetición (bucle) no tiene una condición de salida o parada?", options: ["La computadora imprime un reporte en papel.", "El programa se cierra inmediatamente con éxito.", "El programa se queda atrapado en un ciclo infinito.", "Se convierte automáticamente en una hoja de cálculo."], correct: 2, expl: "Todo ciclo debe tener una condición que le indique cuándo detenerse; de lo contrario, continuará repitiéndose sin parar." },
   { id: "b2-rombo", topic: "Algoritmos", q: "En un diagrama de flujo estándar, ¿qué figura geométrica se utiliza comúnmente para representar una toma de decisión o pregunta?", options: ["Un círculo.", "Un rectángulo.", "Un rombo.", "Una estrella."], correct: 2, expl: "El rombo representa una decisión con dos salidas posibles (generalmente \"Sí\" o \"No\")." },
+  /* Reactivos "al revés": se dan los datos y la fórmula, y hay que elegir el resultado que genera */
+  { id: "rev-suma", topic: "Resultado de fórmulas", q: "En B2 hay 12, en B3 hay 25, en B4 hay 18 y en B5 hay 30. ¿Qué resultado da la fórmula =SUMA(B2:B5)?", cells: { B2: "12", B3: "25", B4: "18", B5: "30", B6: "=SUMA(B2:B5)" }, options: ["85", "21.25", "30", "42"], correct: 0, expl: "SUMA agrega todas las celdas del rango: 12 + 25 + 18 + 30 = 85. (21.25 sería el promedio y 30 el valor máximo.)" },
+  { id: "rev-promedio", topic: "Resultado de fórmulas", q: "En B2 hay 10, en B3 hay 20, en B4 hay 30 y en B5 hay 40. ¿Qué resultado da la fórmula =PROMEDIO(B2:B5)?", cells: { B2: "10", B3: "20", B4: "30", B5: "40", B6: "=PROMEDIO(B2:B5)" }, options: ["100", "25", "40", "10"], correct: 1, expl: "PROMEDIO suma el rango y divide entre cuántos datos hay: (10 + 20 + 30 + 40) ÷ 4 = 100 ÷ 4 = 25. (100 sería la suma.)" },
+  { id: "rev-max", topic: "Resultado de fórmulas", q: "En B2 hay 45, en B3 hay 12, en B4 hay 78 y en B5 hay 33. ¿Qué resultado da la fórmula =MAX(B2:B5)?", cells: { B2: "45", B3: "12", B4: "78", B5: "33", B6: "=MAX(B2:B5)" }, options: ["168", "12", "78", "42"], correct: 2, expl: "MAX devuelve el valor más grande del rango: entre 45, 12, 78 y 33, el mayor es 78. (168 sería la suma y 12 el mínimo.)" },
+  { id: "rev-min", topic: "Resultado de fórmulas", q: "En B2 hay 25, en B3 hay 8, en B4 hay 40 y en B5 hay 17. ¿Qué resultado da la fórmula =MIN(B2:B5)?", cells: { B2: "25", B3: "8", B4: "40", B5: "17", B6: "=MIN(B2:B5)" }, options: ["40", "8", "90", "22.5"], correct: 1, expl: "MIN devuelve el valor más chico del rango: entre 25, 8, 40 y 17, el menor es 8. (40 sería el máximo y 90 la suma.)" },
+  { id: "rev-contar", topic: "Resultado de fórmulas", q: "En B2 hay 15, en B3 hay 22, en B4 hay 9 y en B5 hay 31. ¿Qué resultado da la fórmula =CONTAR(B2:B5)?", cells: { B2: "15", B3: "22", B4: "9", B5: "31", B6: "=CONTAR(B2:B5)" }, options: ["77", "19.25", "4", "31"], correct: 2, expl: "CONTAR no suma: cuenta cuántas celdas tienen números. Hay 4 celdas con número (B2, B3, B4 y B5), así que el resultado es 4. (77 sería la suma.)" },
+  { id: "rev-suma-parcial", topic: "Resultado de fórmulas", q: "En B2 hay 14, en B3 hay 20, en B4 hay 26 y en B5 hay 11. ¿Qué resultado da la fórmula =B2+B4?", cells: { B2: "14", B3: "20", B4: "26", B5: "11", B6: "=B2+B4" }, options: ["71", "34", "37", "40"], correct: 3, expl: "La fórmula suma solo dos celdas sueltas: B2 + B4 = 14 + 26 = 40. No incluye B3 ni B5. (71 sería sumar todo el rango B2:B5.)" },
+  { id: "rev-suma-precios", topic: "Resultado de fórmulas", q: "En D2 hay 120, en D3 hay 85, en D4 hay 200 y en D5 hay 95 (son precios). ¿Qué resultado da la fórmula =SUMA(D2:D5)?", cells: { D2: "120", D3: "85", D4: "200", D5: "95", D6: "=SUMA(D2:D5)" }, options: ["125", "500", "200", "380"], correct: 1, expl: "SUMA agrega los cuatro precios: 120 + 85 + 200 + 95 = 500. (125 sería el promedio y 200 el precio mayor.)" },
+  { id: "rev-descuento", topic: "Resultado de fórmulas", q: "En D2 hay 400 (un precio) y en E2 hay 0.25 (un descuento del 25%). ¿Qué resultado da la fórmula =D2*(1-E2)? Es el precio ya con el descuento aplicado.", cells: { D2: "400", E2: "0.25", F2: "=D2*(1-E2)" }, options: ["100", "300", "500", "375"], correct: 1, expl: "1 − 0.25 = 0.75, y 400 × 0.75 = 300: es lo que se paga tras quitar el 25%. (100 sería solo el descuento en pesos, sin restarlo.)" },
+  { id: "rev-concatenar", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Carlos\" y en B2 está escrito \"Ruiz\". ¿Qué resultado da la fórmula =CONCATENAR(A2;\" \";B2)?", cells: { A2: "Carlos", B2: "Ruiz", C2: "=CONCATENAR(A2;\" \";B2)" }, options: ["CarlosRuiz", "Ruiz Carlos", "Carlos Ruiz", "Carlos+Ruiz"], correct: 2, expl: "CONCATENAR une los textos en orden y el \" \" del centro agrega el espacio: \"Carlos\" + \" \" + \"Ruiz\" = Carlos Ruiz." },
+  { id: "rev-concatenar-sin-espacio", topic: "Resultado de fórmulas", q: "En A2 está escrito \"María\" y en B2 está escrito \"López\". ¿Qué resultado da la fórmula =CONCATENAR(A2;B2)?", cells: { A2: "María", B2: "López", C2: "=CONCATENAR(A2;B2)" }, options: ["María López", "MaríaLópez", "LópezMaría", "María+López"], correct: 1, expl: "CONCATENAR une los textos tal cual y esta fórmula no incluye ningún \" \" en el centro, así que el resultado sale pegado, sin espacio: \"María\" + \"López\" = MaríaLópez." },
+  { id: "rev-concatenar-error", topic: "Resultado de fórmulas", q: "En A2 está escrito \"Ana\" y en B2 está escrito \"Paz\". Escribes la fórmula =CONCATENR(A2;B2) (fíjate bien en el nombre de la función). ¿Qué pasa en Excel?", cells: { A2: "Ana", B2: "Paz", C2: "#¿NOMBRE?" }, bar: "=CONCATENR(A2;B2)", options: ["Ana Paz", "AnaPaz", "#¿NOMBRE?", "Excel lo corrige solo y une los textos"], correct: 2, expl: "El nombre de la función está mal escrito: CONCATENR no existe (la correcta es CONCATENAR). Excel no reconoce ese nombre y muestra el error #¿NOMBRE?, así que no une ningún texto." },
+  { id: "rev-si", topic: "Resultado de fórmulas", q: "En D2 hay 150. ¿Qué resultado da la fórmula =SI(D2>=100;\"Caro\";\"Barato\")?", cells: { D2: "150", E2: "=SI(D2>=100;\"Caro\";\"Barato\")" }, options: ["Caro", "Barato", "VERDADERO", "150"], correct: 0, expl: "La condición D2>=100 se cumple (150 sí es 100 o más), así que SI devuelve el primer texto: \"Caro\". Si D2 valiera menos de 100, daría \"Barato\"." },
+  { id: "rev-importe", topic: "Resultado de fórmulas", q: "En B2 hay 6 (una cantidad) y en C2 hay 45 (un precio unitario). ¿Qué resultado da la fórmula =B2*C2?", cells: { B2: "6", C2: "45", D2: "=B2*C2" }, options: ["51", "39", "7.5", "270"], correct: 3, expl: "El importe es cantidad por precio: 6 × 45 = 270. (51 sería sumarlos y 7.5 dividirlos.)" },
+  { id: "rev-suma-entre-contar", topic: "Resultado de fórmulas", q: "En B2 hay 8, en B3 hay 12, en B4 hay 20 y en B5 hay 16. ¿Qué resultado da la fórmula =SUMA(B2:B5)/CONTAR(B2:B5)?", cells: { B2: "8", B3: "12", B4: "20", B5: "16", B6: "=SUMA(B2:B5)/CONTAR(B2:B5)" }, options: ["56", "14", "4", "20"], correct: 1, expl: "Primero las funciones: SUMA da 8 + 12 + 20 + 16 = 56 y CONTAR da 4. Luego la división: 56 ÷ 4 = 14. Es otra forma de calcular el promedio." },
+  { id: "rev-rango", topic: "Resultado de fórmulas", q: "En B2 hay 33, en B3 hay 7, en B4 hay 58 y en B5 hay 21. ¿Qué resultado da la fórmula =MAX(B2:B5)-MIN(B2:B5)?", cells: { B2: "33", B3: "7", B4: "58", B5: "21", B6: "=MAX(B2:B5)-MIN(B2:B5)" }, options: ["58", "7", "51", "119"], correct: 2, expl: "MAX da 58 y MIN da 7; la resta es 58 − 7 = 51. Ese resultado se conoce como el rango de los datos: la distancia entre el mayor y el menor." },
+  { id: "rev-iva", topic: "Resultado de fórmulas", q: "En B2 hay 350 (un precio sin IVA). ¿Qué resultado da la fórmula =B2*0.16? Es el IVA del 16% en pesos.", cells: { B2: "350", C2: "=B2*0.16" }, options: ["406", "56", "5.6", "294"], correct: 1, expl: "El IVA es el precio por la tasa: 350 × 0.16 = 56. (406 sería el precio ya con el IVA incluido: 350 + 56.)" },
 ];
 
 /* Reactivos de teoría cuyos números/nombres se generan de la variante (T3, T4, T7, T9, T12 de la propuesta) */
@@ -145,7 +162,7 @@ function genDynamicQuestions(rng: () => number): BaseQ[] {
   return [t3, t4, t7, t9, t12];
 }
 /* ============ Variante única por alumno ============ */
-type ShuffledQ = { id: string; topic: string; q: string; options: string[]; correctIdx: number; expl: string };
+type ShuffledQ = { id: string; topic: string; q: string; options: string[]; correctIdx: number; expl: string; cells?: Record<string, string>; bar?: string };
 type Variant = {
   code: string;
   questions: ShuffledQ[];
@@ -174,7 +191,7 @@ function buildVariant(initials: string): Variant {
   const questions: ShuffledQ[] = ordered.map((bq) => {
     const idxs = shuffle(bq.options.map((_, i) => i), rng);
     const opts = idxs.map((i) => bq.options[i] as string);
-    return { id: bq.id, topic: bq.topic, q: bq.q, options: opts, correctIdx: idxs.indexOf(bq.correct), expl: bq.expl };
+    return { id: bq.id, topic: bq.topic, q: bq.q, options: opts, correctIdx: idxs.indexOf(bq.correct), expl: bq.expl, cells: bq.cells, bar: bq.bar };
   });
   // Valores prácticos únicos
   const salesSet = new Set<number>();
@@ -382,19 +399,19 @@ function evaluateLogicFormula(raw: string, values: Record<string, number>): bool
 type PracTask = { cell: string; title: string; kind?: "number" | "text" | "logic"; instruction: (v: Variant) => string; check: (formula: string, value: number | null, text: string | null, v: Variant) => { ok: boolean; msg: string } };
 const hasRange = (f: string, r: string) => f.replace(/\s+/g, "").toUpperCase().includes(r);
 const PRACTICAL: PracTask[] = [
-  { cell: "B7", title: "Total de ventas", instruction: () => "En B7 escribe el total de las ventas de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("SUMA") && val !== null && Math.abs(val - v.expected.sum) < 0.01, msg: `Debía ser =SUMA(B2:B5) → ${fmtNum(v.expected.sum)}` }) },
-  { cell: "B8", title: "Promedio de ventas", instruction: () => "En B8 escribe el promedio de las ventas de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("PROMEDIO") && val !== null && Math.abs(val - v.expected.avg) < 0.01, msg: `Debía ser =PROMEDIO(B2:B5) → ${fmtNum(v.expected.avg)}` }) },
-  { cell: "B9", title: "Venta más grande", instruction: () => "En B9 escribe la venta más grande de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("MAX") && val !== null && Math.abs(val - v.expected.max) < 0.01, msg: `Debía ser =MAX(B2:B5) → ${fmtNum(v.expected.max)}` }) },
-  { cell: "B10", title: "Venta más chica", instruction: () => "En B10 escribe la venta más chica de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("MIN") && val !== null && Math.abs(val - v.expected.min) < 0.01, msg: `Debía ser =MIN(B2:B5) → ${fmtNum(v.expected.min)}` }) },
-  { cell: "B11", title: "Cantidad de datos", instruction: () => "En B11 escribe cuántos datos numéricos hay de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("CONTAR") && val !== null && Math.abs(val - v.expected.count) < 0.01, msg: `Debía ser =CONTAR(B2:B5) → ${fmtNum(v.expected.count)}` }) },
-  { cell: "C2", title: "Suma parcial", instruction: () => "En C2 escribe la suma de B2 y B4 únicamente.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); const okRange = !up.includes("B2:B4"); const hasCells = up.includes("B2") && up.includes("B4"); return { ok: okRange && hasCells && (up.includes("+") || up.includes(";")) && val !== null && Math.abs(val - v.expected.loose) < 0.01, msg: `Debía sumar solo B2+B4 → ${fmtNum(v.expected.loose)} (con + o con ;, no con :)` }; } },
-  { cell: "F2", title: "Impuesto", instruction: () => "En F2 calcula el impuesto del precio en D2 aplicando la tasa que está en E2.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); const hasDollar = up.includes("$E$2") || up.includes("$E2") || up.includes("E$2"); return { ok: hasDollar && up.includes("D2") && val !== null && Math.abs(val - v.expected.tax) < 0.05, msg: `Debía ser =D2*$E$2 → ${fmtNum(v.expected.tax)} (con $ fijando E2)` }; } },
-  { cell: "D7", title: "Total de precios", instruction: () => "En D7 escribe el total de los precios de D2 a D5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "D2:D5") && val !== null && Math.abs(val - v.expected.priceSum) < 0.01, msg: `Debía ser =SUMA(D2:D5) → ${fmtNum(v.expected.priceSum)}` }) },
-  { cell: "D13", title: "Potencia", instruction: () => "En D13 calcula la base de B13 elevada al exponente de C13.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); return { ok: up.includes("B13") && up.includes("C13") && (up.includes("^") || up.includes("POTENCIA")) && val !== null && Math.abs(val - v.expected.pow) < 0.01, msg: `Debía ser =B13^C13 → ${fmtNum(v.expected.pow)}` }; } },
-  { cell: "D14", title: "Descuento en pesos", instruction: () => "En D14 calcula el descuento en pesos del precio de B14 según el porcentaje de C14.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); return { ok: up.includes("B14") && up.includes("C14") && val !== null && Math.abs(val - v.expected.discount) < 0.01, msg: `Debía ser =B14*C14% → ${fmtNum(v.expected.discount)}` }; } },
-  { cell: "C15", title: "Nombre completo", kind: "text", instruction: () => "En C15 une el nombre de A15 y el apellido de B15 con un espacio entre los dos.", check: (f, _val, text, v) => { const up = f.replace(/\s+/g, "").toUpperCase(); return { ok: up.includes("A15") && up.includes("B15") && up.includes("&") && text === `${v.firstName} ${v.lastName}`, msg: `Debía ser =A15&" "&B15 → ${v.firstName} ${v.lastName} (con el espacio entre nombre y apellido)` }; } },
+  { cell: "B7", title: "Total de ventas", instruction: () => "En B7 escribe la fórmula para el total de las ventas de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("SUMA") && val !== null && Math.abs(val - v.expected.sum) < 0.01, msg: `Debía ser =SUMA(B2:B5) → ${fmtNum(v.expected.sum)}` }) },
+  { cell: "B8", title: "Promedio de ventas", instruction: () => "En B8 escribe la fórmula para el promedio de las ventas de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("PROMEDIO") && val !== null && Math.abs(val - v.expected.avg) < 0.01, msg: `Debía ser =PROMEDIO(B2:B5) → ${fmtNum(v.expected.avg)}` }) },
+  { cell: "B9", title: "Venta más grande", instruction: () => "En B9 escribe la fórmula para la venta más grande de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("MAX") && val !== null && Math.abs(val - v.expected.max) < 0.01, msg: `Debía ser =MAX(B2:B5) → ${fmtNum(v.expected.max)}` }) },
+  { cell: "B10", title: "Venta más chica", instruction: () => "En B10 escribe la fórmula para la venta más chica de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("MIN") && val !== null && Math.abs(val - v.expected.min) < 0.01, msg: `Debía ser =MIN(B2:B5) → ${fmtNum(v.expected.min)}` }) },
+  { cell: "B11", title: "Cantidad de datos", instruction: () => "En B11 escribe la fórmula para saber cuántos datos numéricos hay de B2 a B5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "B2:B5") && f.toUpperCase().includes("CONTAR") && val !== null && Math.abs(val - v.expected.count) < 0.01, msg: `Debía ser =CONTAR(B2:B5) → ${fmtNum(v.expected.count)}` }) },
+  { cell: "C2", title: "Suma parcial", instruction: () => "En C2 escribe la fórmula para la suma de B2 y B4 únicamente.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); const okRange = !up.includes("B2:B4"); const hasCells = up.includes("B2") && up.includes("B4"); return { ok: okRange && hasCells && (up.includes("+") || up.includes(";")) && val !== null && Math.abs(val - v.expected.loose) < 0.01, msg: `Debía sumar solo B2+B4 → ${fmtNum(v.expected.loose)} (con + o con ;, no con :)` }; } },
+  { cell: "F2", title: "Impuesto", instruction: () => "En F2 escribe la fórmula para el impuesto del precio en D2 aplicando la tasa que está en E2.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); const hasDollar = up.includes("$E$2") || up.includes("$E2") || up.includes("E$2"); return { ok: hasDollar && up.includes("D2") && val !== null && Math.abs(val - v.expected.tax) < 0.05, msg: `Debía ser =D2*$E$2 → ${fmtNum(v.expected.tax)} (con $ fijando E2)` }; } },
+  { cell: "D7", title: "Total de precios", instruction: () => "En D7 escribe la fórmula para el total de los precios de D2 a D5.", check: (f, val, _text, v) => ({ ok: hasRange(f, "D2:D5") && val !== null && Math.abs(val - v.expected.priceSum) < 0.01, msg: `Debía ser =SUMA(D2:D5) → ${fmtNum(v.expected.priceSum)}` }) },
+  { cell: "D13", title: "Potencia", instruction: () => "En D13 escribe la fórmula para la base de B13 elevada al exponente de C13.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); return { ok: up.includes("B13") && up.includes("C13") && (up.includes("^") || up.includes("POTENCIA")) && val !== null && Math.abs(val - v.expected.pow) < 0.01, msg: `Debía ser =B13^C13 → ${fmtNum(v.expected.pow)}` }; } },
+  { cell: "D14", title: "Descuento en pesos", instruction: () => "En D14 escribe la fórmula para el descuento en pesos del precio de B14 según el porcentaje de C14.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); return { ok: up.includes("B14") && up.includes("C14") && val !== null && Math.abs(val - v.expected.discount) < 0.01, msg: `Debía ser =B14*C14% → ${fmtNum(v.expected.discount)}` }; } },
+  { cell: "C15", title: "Nombre completo", kind: "text", instruction: () => "En C15 escribe la fórmula para unir el nombre de A15 y el apellido de B15 con un espacio entre los dos.", check: (f, _val, text, v) => { const up = f.replace(/\s+/g, "").toUpperCase(); return { ok: up.includes("A15") && up.includes("B15") && up.includes("&") && text === `${v.firstName} ${v.lastName}`, msg: `Debía ser =A15&" "&B15 → ${v.firstName} ${v.lastName} (con el espacio entre nombre y apellido)` }; } },
   { cell: "C16", title: "¿Precio de 100 o más?", kind: "logic", instruction: () => "En C16 escribe una fórmula que diga si el precio de B16 es de 100 o más.", check: (f, _val, text, v) => { const up = f.toUpperCase().replace(/\s+/g, "").replace(/\$/g, ""); return { ok: up.includes("B16>=100") && text === (v.expected.cmp ? "VERDADERO" : "FALSO"), msg: `Debía ser =B16>=100 → ${v.expected.cmp ? "VERDADERO" : "FALSO"} (según el precio de tu variante)` }; } },
-  { cell: "D17", title: "Importe", instruction: () => "En D17 calcula el importe: la cantidad de B17 por el precio unitario de C17.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); return { ok: up.includes("B17") && up.includes("C17") && up.includes("*") && val !== null && Math.abs(val - v.expected.importe) < 0.01, msg: `Debía ser =B17*C17 → ${fmtNum(v.expected.importe)}` }; } },
+  { cell: "D17", title: "Importe", instruction: () => "En D17 escribe la fórmula para el importe: la cantidad de B17 por el precio unitario de C17.", check: (f, val, _text, v) => { const up = f.toUpperCase().replace(/\s+/g, ""); return { ok: up.includes("B17") && up.includes("C17") && up.includes("*") && val !== null && Math.abs(val - v.expected.importe) < 0.01, msg: `Debía ser =B17*C17 → ${fmtNum(v.expected.importe)}` }; } },
 ];
 const EDITABLE = PRACTICAL.map((t) => t.cell);
 
@@ -426,6 +443,80 @@ function parseRosterText(text: string): { initials: string; fullName: string }[]
 type Phase = "intro" | "exam" | "result" | "teacher";
 type Grade = { theoryOk: Record<string, boolean>; pracOk: Record<string, { ok: boolean; msg: string }>; theoryScore: number; pracScore: number; total: number; totalPoints: number; pct: number };
 
+/* Hoja esperada de cada ejercicio práctico: datos de la variante, la fórmula
+   correcta (barra de fórmulas) y su resultado en la celda destino. */
+function expectedSheetFor(cell: string, v: Variant): { cells: Record<string, string>; bar: string; resultCell: string } | null {
+  const sales: Record<string, string> = {};
+  v.sales.forEach((n, i) => { sales[`B${i + 2}`] = String(n); });
+  const prices: Record<string, string> = { D2: String(v.price), D3: String(v.price + 40), D4: String(v.price + 20), D5: String(v.price - 30) };
+  const e = v.expected;
+  switch (cell) {
+    case "B7": return { cells: { ...sales, B7: fmtNum(e.sum) }, bar: "=SUMA(B2:B5)", resultCell: "B7" };
+    case "B8": return { cells: { ...sales, B8: fmtNum(e.avg) }, bar: "=PROMEDIO(B2:B5)", resultCell: "B8" };
+    case "B9": return { cells: { ...sales, B9: fmtNum(e.max) }, bar: "=MAX(B2:B5)", resultCell: "B9" };
+    case "B10": return { cells: { ...sales, B10: fmtNum(e.min) }, bar: "=MIN(B2:B5)", resultCell: "B10" };
+    case "B11": return { cells: { ...sales, B11: fmtNum(e.count) }, bar: "=CONTAR(B2:B5)", resultCell: "B11" };
+    case "C2": return { cells: { ...sales, C2: fmtNum(e.loose) }, bar: "=B2+B4", resultCell: "C2" };
+    case "F2": return { cells: { D2: String(v.price), E2: fmtNum(v.rate), F2: fmtNum(e.tax) }, bar: "=D2*$E$2", resultCell: "F2" };
+    case "D7": return { cells: { ...prices, D7: fmtNum(e.priceSum) }, bar: "=SUMA(D2:D5)", resultCell: "D7" };
+    case "D13": return { cells: { B13: String(v.powBase), C13: String(v.powExp), D13: fmtNum(e.pow) }, bar: "=B13^C13", resultCell: "D13" };
+    case "D14": return { cells: { B14: String(v.discPrice), C14: `${v.discPct}%`, D14: fmtNum(e.discount) }, bar: "=B14*C14%", resultCell: "D14" };
+    case "C15": return { cells: { A15: v.firstName, B15: v.lastName, C15: `${v.firstName} ${v.lastName}` }, bar: "=A15&\" \"&B15", resultCell: "C15" };
+    case "C16": return { cells: { B16: String(v.cmpPrice), C16: e.cmp ? "VERDADERO" : "FALSO" }, bar: "=B16>=100", resultCell: "C16" };
+    case "D17": return { cells: { B17: String(v.qty), C17: String(v.unitPrice), D17: fmtNum(e.importe) }, bar: "=B17*C17", resultCell: "D17" };
+    default: return null;
+  }
+}
+
+/* Mini hoja tipo Excel: cuadrícula con encabezados de columna y fila. Si trae
+   `bar`, muestra la barra de fórmulas de Excel con esa fórmula; la celda de la
+   fórmula muestra su texto (amarilla) o, si trae `resultCell`, esa celda
+   muestra el resultado. Un valor que empieza con # se ve como el error que
+   Excel muestra dentro de la celda. */
+function MiniSheet({ cells, bar, resultCell }: { cells: Record<string, string>; bar?: string; resultCell?: string }) {
+  const cols = [...new Set(Object.keys(cells).map((a) => a.replace(/[0-9]/g, "")))].sort((a, b) => colToNum(a) - colToNum(b));
+  const rows = [...new Set(Object.keys(cells).map((a) => Number(a.replace(/[^0-9]/g, ""))))].sort((a, b) => a - b);
+  const headerStyle: CSSProperties = { background: "var(--space-surface-alt)", color: "var(--dim)", fontWeight: 600, textAlign: "center" };
+  const aria = `Hoja de Excel con los datos: ${Object.entries(cells).map(([a, v]) => `${a} = ${v}`).join(", ")}${bar ? `. Fórmula: ${bar}` : ""}`;
+  return (
+    <div className="mb-3 inline-block max-w-full overflow-x-auto rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--surface)" }} role="img" aria-label={aria}>
+      {bar && (
+        <div className="flex items-center gap-2 border-b px-2 py-1" style={{ borderColor: "var(--border)", background: "var(--space-surface-alt)" }}>
+          <span className="font-serif text-sm italic" style={{ color: "var(--dim)" }}>fx</span>
+          <span className="font-mono text-[13px] font-semibold whitespace-nowrap" style={{ color: "var(--text)" }}>{bar}</span>
+        </div>
+      )}
+      <table className="border-collapse font-mono text-[13px]" style={{ color: "var(--text)" }}>
+        <thead>
+          <tr>
+            <th className="border px-2 py-1" style={{ ...headerStyle, borderColor: "var(--border)" }}></th>
+            {cols.map((c) => (
+              <th key={c} className="border px-3 py-1" style={{ ...headerStyle, borderColor: "var(--border)" }}>{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r}>
+              <th className="border px-2 py-1" style={{ ...headerStyle, borderColor: "var(--border)" }}>{r}</th>
+              {cols.map((c) => {
+                const addr = `${c}${r}`;
+                const val = cells[addr];
+                const isFormula = !!val && val.startsWith("=");
+                const isResult = addr === resultCell;
+                const isError = !!val && val.startsWith("#");
+                return (
+                  <td key={c} className="border px-3 py-1 text-center whitespace-nowrap" style={{ borderColor: "var(--border)", background: isFormula || isResult ? "var(--yellow-cell)" : "var(--surface)", fontWeight: isFormula || isResult || isError ? 700 : 400 }}>{val ?? ""}</td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function App() {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("intro");
@@ -445,6 +536,18 @@ export function App() {
   const [pwInput, setPwInput] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwError, setPwError] = useState("");
+  // Bloqueo de reingreso: resultado ya enviado con estas iniciales.
+  const [alreadyDone, setAlreadyDone] = useState<{ studentName: string; score: number; totalPoints: number; percentage: number } | null>(null);
+  const [checkingStart, setCheckingStart] = useState(false);
+  // Borrado de resultados en el panel: confirmación en línea y mensajes.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [resultMsg, setResultMsg] = useState("");
+  // Avance guardado: si el alumno vuelve antes de terminar, continúa donde
+  // se quedó. finishedRef evita que un guardado tardío recree el avance
+  // después de enviar el examen.
+  const [resumed, setResumed] = useState(false);
+  const finishedRef = useRef(false);
+  const saveTimerRef = useRef<number | null>(null);
 
   const unlocked = teacherPw.length > 0;
   const teacherStatus = useQuery({ queryKey: ["teacher-status"], queryFn: () => api.teacherStatus({}), enabled: phase === "teacher" });
@@ -470,6 +573,11 @@ export function App() {
     mutationFn: async (pw: string) => await api.setTeacherPassword({ password: pw }),
     onSuccess: (_r, pw) => { setTeacherPw(pw); setPwInput(""); setPwConfirm(""); setPwError(""); queryClient.invalidateQueries({ queryKey: ["teacher-status"] }); },
     onError: (e) => setPwError(e instanceof Error ? e.message : String(e)),
+  });
+  const deleteResultMut = useMutation({
+    mutationFn: async (id: number) => await api.deleteResult({ password: teacherPw, id }),
+    onSuccess: () => { setResultMsg("Resultado borrado: ese alumno ya puede volver a hacer el examen."); setConfirmDeleteId(null); queryClient.invalidateQueries({ queryKey: ["results"] }); },
+    onError: (e) => setResultMsg(`Error al borrar: ${e instanceof Error ? e.message : String(e)}`),
   });
   const verifyPwMut = useMutation({
     mutationFn: async (pw: string) => await api.verifyTeacherPassword({ password: pw }),
@@ -505,7 +613,23 @@ export function App() {
 
   async function startExam() {
     const ini = normInitials(initialsInput);
-    if (ini.length < 2) { setEntryError("Escribe tus iniciales (al menos 2 letras), en el orden de la lista oficial, apellidos primero. Ejemplo: AGUILAR MENDEZ OSCAR EMILIO → AMOE."); return; }
+    if (ini.length < 2) { setEntryError("Escribe tus iniciales (al menos 2 letras), en el orden de la lista oficial, apellidos primero. Ejemplo: SÁNCHEZ RIVERA DIEGO ANDRÉS → SRDA."); return; }
+    // Bloqueo de reingreso: si ya hay un resultado enviado con estas
+    // iniciales, no se entra de nuevo a la misma variante; se muestra la
+    // calificación que ya sacó. Si empezó pero no terminó, no hay
+    // resultado guardado y sí puede entrar. Si el servidor no responde,
+    // no se bloquea a nadie por un fallo de red.
+    setCheckingStart(true);
+    try {
+      const chk = await api.checkExistingResult({ initials: ini });
+      if (chk.dbReady && chk.result) {
+        setAlreadyDone({ studentName: chk.result.studentName, score: chk.result.score, totalPoints: chk.result.totalPoints, percentage: chk.result.percentage });
+        setCheckingStart(false);
+        return;
+      }
+    } catch { /* sin verificación disponible: se entra como antes */ }
+    setCheckingStart(false);
+    setAlreadyDone(null);
     // Identificación: si las iniciales están en la lista del maestro, el
     // nombre se completa solo. La lista completa nunca llega al alumno.
     let fromList = "";
@@ -517,10 +641,43 @@ export function App() {
     if (!name) { setEntryError("Escribe tu nombre completo, además de tus iniciales."); return; }
     setEntryError("");
     const variant = buildVariant(ini);
+    // Continuar donde se quedó: si hay avance guardado de esta misma
+    // variante (empezó y no envió), se restauran respuestas, fórmulas y
+    // la celda en la que iba.
+    let restoredAnswers: Record<string, number> = {};
+    let restoredFormulas: Record<string, string> = {};
+    let restoredCell = variant.practicalCells[0] ?? "B7";
+    let didResume = false;
+    try {
+      const prog = await api.getProgress({ initials: ini });
+      if (prog.dbReady && prog.progress && prog.progress.variantCode === variant.code) {
+        const parsed = JSON.parse(prog.progress.state) as { answers?: unknown; formulas?: unknown; selectedCell?: unknown };
+        if (parsed.answers && typeof parsed.answers === "object") restoredAnswers = parsed.answers as Record<string, number>;
+        if (parsed.formulas && typeof parsed.formulas === "object") restoredFormulas = parsed.formulas as Record<string, string>;
+        if (typeof parsed.selectedCell === "string" && variant.practicalCells.includes(parsed.selectedCell)) restoredCell = parsed.selectedCell;
+        didResume = Object.keys(restoredAnswers).length > 0 || Object.values(restoredFormulas).some((f) => f.trim().length > 0);
+      }
+    } catch { /* sin avance recuperable: se empieza de cero */ }
+    finishedRef.current = false;
+    setResumed(didResume);
     setSession({ name, initials: ini, variant });
-    setAnswers({}); setFormulas({}); setGrade(null); setSelectedCell(variant.practicalCells[0] ?? "B7");
+    setAnswers(restoredAnswers); setFormulas(restoredFormulas); setGrade(null); setSelectedCell(restoredCell);
     setPhase("exam");
   }
+
+  // Autoguardado del avance: cada cambio en respuestas, fórmulas o celda
+  // actual se guarda en el servidor (con 800 ms de espera) mientras el
+  // examen sigue abierto, para poder continuar si se sale o se cierra.
+  useEffect(() => {
+    if (phase !== "exam" || !session || finishedRef.current) return;
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    const snap = { initials: session.initials, name: session.name, code: session.variant.code, state: JSON.stringify({ answers, formulas, selectedCell }) };
+    saveTimerRef.current = window.setTimeout(() => {
+      if (finishedRef.current) return;
+      void api.saveProgress({ initials: snap.initials, studentName: snap.name, variantCode: snap.code, state: snap.state }).catch(() => undefined);
+    }, 800);
+    return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
+  }, [phase, session, answers, formulas, selectedCell]);
 
   // Valores de la hoja para la variante activa
   const sheetValues = useMemo<Record<string, number>>(() => {
@@ -571,6 +728,7 @@ export function App() {
   function finishExam() {
     const g = computeGrade();
     if (!g || !session) return;
+    finishedRef.current = true; // el envío borra el avance guardado en el servidor
     setGrade(g);
     setPhase("result");
     submitMut.mutate({
@@ -605,12 +763,12 @@ export function App() {
             <p className="mt-1 text-sm" style={{ color: "var(--dim)" }}>
               {rosterCount > 0
                 ? `Hay una lista de ${rosterCount} alumnos cargada para identificarte: si tus iniciales coinciden con un alumno de la lista, tu nombre se completa solo. Si no coinciden, entra con el nombre que escribas.`
-                : "Escribe tus iniciales: la primera letra de cada palabra de tu nombre, en el orden de la lista oficial (apellidos primero). Ejemplo: AGUILAR MENDEZ OSCAR EMILIO → AMOE. Con eso se genera tu examen único."}
+                : "Escribe tus iniciales: la primera letra de cada palabra de tu nombre, en el orden de la lista oficial (apellidos primero). Ejemplo: SÁNCHEZ RIVERA DIEGO ANDRÉS → SRDA. Con eso se genera tu examen único."}
             </p>
             <label htmlFor="full-name" className="mt-4 block text-sm font-semibold">Nombre completo</label>
-            <input id="full-name" {...FIELDS.submitResult.studentName} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ej.: Karlo Gamboa Ibarria" className="mt-1 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+            <input id="full-name" {...FIELDS.submitResult.studentName} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ej.: Sánchez Rivera Diego Andrés" className="mt-1 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
             <label htmlFor="initials" className="mt-4 block text-sm font-semibold">Tus iniciales</label>
-            <input id="initials" {...FIELDS.submitResult.initials} value={initialsInput} onChange={(e) => setInitialsInput(e.target.value.toUpperCase())} placeholder="Ej.: KGI" className="mt-1 w-full rounded-xl border px-3 py-2.5 font-mono text-lg font-bold uppercase tracking-[0.3em]" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} aria-describedby="initials-help" />
+            <input id="initials" {...FIELDS.submitResult.initials} value={initialsInput} onChange={(e) => { setInitialsInput(e.target.value.toUpperCase()); setAlreadyDone(null); }} placeholder="Ej.: SRDA" className="mt-1 w-full rounded-xl border px-3 py-2.5 font-mono text-lg font-bold uppercase tracking-[0.3em]" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} aria-describedby="initials-help" />
             <p id="initials-help" className="mt-1 text-xs" style={{ color: "var(--dim)" }}>Sin espacios ni puntos. Tu variante de examen se genera con estas iniciales: dos alumnos con iniciales distintas no reciben el mismo examen.</p>
             {initialsInput.trim().length >= 2 && (
               <p className="mt-3 rounded-xl px-3 py-2 font-mono text-sm font-semibold" style={{ background: "#EFF6F1", color: "#185C37" }}>
@@ -618,13 +776,22 @@ export function App() {
               </p>
             )}
             {entryError && <p role="alert" className="mt-3 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>{entryError}</p>}
-            <button type="button" onClick={() => void startExam()} className="mt-5 w-full rounded-xl py-3 text-base font-bold text-white" style={{ background: "#217346" }}>Comenzar mi examen</button>
+            {alreadyDone && (
+              <div role="alert" className="mt-3 rounded-xl px-3 py-3 text-sm" style={{ background: "#FFF4D6", color: "#6B4E00" }}>
+                <p className="font-bold">Ya realizaste este examen y tu resultado ya fue enviado.</p>
+                <p className="mt-1">{alreadyDone.studentName} · Calificación: <strong>{fmtNum(alreadyDone.score)} de {fmtNum(alreadyDone.totalPoints)} ({fmtNum(alreadyDone.percentage)}%)</strong></p>
+                <p className="mt-1">No puedes volver a entrar con la misma variante. Si necesitas repetirlo, pide a tu maestro que borre tu resultado desde su panel.</p>
+              </div>
+            )}
+            <button type="button" disabled={checkingStart} onClick={() => void startExam()} className="mt-5 w-full rounded-xl py-3 text-base font-bold text-white disabled:opacity-40" style={{ background: "#217346" }}>{checkingStart ? "Verificando…" : "Comenzar mi examen"}</button>
           </section>
 
-          <button type="button" onClick={() => setPhase("teacher")} className="mt-4 w-full rounded-xl border py-3 text-sm font-bold" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text)" }}>
-            Panel del maestro: cargar lista de alumnos y ver resultados
-          </button>
           <p className="mt-3 text-center text-xs" style={{ color: "var(--dim)" }}>Grupo de 54 alumnos · Cada resultado se guarda con iniciales y variante.</p>
+          <p className="mt-6 text-center">
+            <button type="button" onClick={() => setPhase("teacher")} className="text-xs font-semibold underline underline-offset-2" style={{ color: "var(--dim)" }}>
+              Acceso docente
+            </button>
+          </p>
         </main>
       </div>
     );
@@ -712,14 +879,29 @@ export function App() {
                 {results.isError && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>No se pudieron cargar los resultados desde Postgres. Revisa que la variable DATABASE_URL esté configurada y el servicio de Postgres esté en línea.</p>}
                 {results.data && !results.data.dbReady && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>Postgres no está disponible en este entorno (falta DATABASE_URL): no hay almacén del cual leer resultados.</p>}
                 {(results.data?.results.length ?? 0) === 0 && !results.isPending && !results.isError && <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>Todavía no hay exámenes terminados.</p>}
+                {resultMsg && <p role="status" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#EFF6F1", color: "#185C37" }}>{resultMsg}</p>}
                 <div className="mt-3 space-y-2">
                   {(results.data?.results ?? []).map((r) => (
-                    <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5" style={{ background: "var(--bg)" }}>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">{r.studentName} <span className="font-mono text-xs" style={{ color: "var(--dim)" }}>{r.initials} · {r.variantCode}</span></p>
-                        <p className="text-xs" style={{ color: "var(--dim)" }}>Teoría {fmtNum(r.theoryScore)} · Práctica {fmtNum(r.practicalScore)} · {new Date(r.created_at).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                    <div key={r.id} className="rounded-xl px-3 py-2.5" style={{ background: "var(--bg)" }}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold">{r.studentName} <span className="font-mono text-xs" style={{ color: "var(--dim)" }}>{r.initials} · {r.variantCode}</span></p>
+                          <p className="text-xs" style={{ color: "var(--dim)" }}>Teoría {fmtNum(r.theoryScore)} · Práctica {fmtNum(r.practicalScore)} · {new Date(r.created_at).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="rounded-full px-3 py-1 font-mono text-sm font-bold text-white" style={{ background: r.percentage >= 60 ? "#217346" : "#D64541" }}>{fmtNum(r.percentage)}%</span>
+                          <button type="button" aria-label={`Borrar resultado de ${r.studentName}`} onClick={() => { setConfirmDeleteId(r.id); setResultMsg(""); }} className="rounded-lg border px-2.5 py-1.5 text-xs font-bold" style={{ borderColor: "var(--border)", color: "#8B1E1E" }}>Borrar</button>
+                        </div>
                       </div>
-                      <span className="shrink-0 rounded-full px-3 py-1 font-mono text-sm font-bold text-white" style={{ background: r.percentage >= 60 ? "#217346" : "#D64541" }}>{fmtNum(r.percentage)}%</span>
+                      {confirmDeleteId === r.id && (
+                        <div className="mt-2 rounded-lg px-3 py-2 text-xs" style={{ background: "#FDECEC", color: "#8B1E1E" }}>
+                          <p className="font-semibold">¿Borrar el resultado de {r.studentName} ({r.initials})? Ya no contará como examen realizado y podrá volver a hacerlo.</p>
+                          <div className="mt-2 flex gap-2">
+                            <button type="button" disabled={deleteResultMut.isPending} onClick={() => deleteResultMut.mutate(r.id)} className="rounded-lg px-3 py-1.5 font-bold text-white disabled:opacity-40" style={{ background: "#D64541" }}>{deleteResultMut.isPending ? "Borrando…" : "Sí, borrar"}</button>
+                            <button type="button" onClick={() => setConfirmDeleteId(null)} className="rounded-lg border px-3 py-1.5 font-bold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>Cancelar</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -764,11 +946,12 @@ export function App() {
           <section className="mt-5" aria-label="Revisión de práctica">
             <h2 className="text-lg font-bold">Revisión de la práctica</h2>
             <div className="mt-2 space-y-2">
-              {PRACTICAL.filter((t) => v.practicalCells.includes(t.cell)).map((t) => { const r = grade.pracOk[t.cell]; const ok = r?.ok ?? false; return (
+              {PRACTICAL.filter((t) => v.practicalCells.includes(t.cell)).map((t) => { const r = grade.pracOk[t.cell]; const ok = r?.ok ?? false; const sheet = !ok ? expectedSheetFor(t.cell, v) : null; return (
                 <div key={t.cell} className="rounded-xl border px-3 py-2.5 text-sm" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
                   <p className="font-bold">{ok ? "✅" : "❌"} {t.title} <span className="font-mono text-xs" style={{ color: "var(--dim)" }}>celda {t.cell}</span></p>
                   <p className="font-mono text-xs" style={{ color: "var(--dim)" }}>Tu fórmula: {(formulas[t.cell] ?? "").trim() || "(vacía)"}</p>
                   {!ok && <p className="mt-0.5 text-xs font-semibold" style={{ color: "#8B1E1E" }}>{r?.msg}</p>}
+                  {sheet && <div className="mt-2"><MiniSheet cells={sheet.cells} bar={sheet.bar} resultCell={sheet.resultCell} /></div>}
                 </div> ); })}
             </div>
           </section>
@@ -778,6 +961,7 @@ export function App() {
             <div className="mt-2 space-y-2">
               {v.questions.map((q, i) => { const ok = grade.theoryOk[q.id]; return (
                 <div key={q.id} className="rounded-xl border px-3 py-2.5 text-sm" style={{ background: "var(--surface)", borderColor: "var(--border)", opacity: ok ? 0.75 : 1 }}>
+                  {q.cells && <MiniSheet cells={q.cells} bar={q.bar} />}
                   <p className="font-semibold">{ok ? "✅" : "❌"} {i + 1}. {q.q}</p>
                   {!ok && <p className="mt-1 text-xs">Respuesta correcta: <strong>{q.options[q.correctIdx]}</strong></p>}
                   {!ok && <p className="mt-0.5 text-xs" style={{ color: "var(--dim)" }}>{q.expl}</p>}
@@ -839,6 +1023,9 @@ export function App() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pb-12 pt-4">
+        {resumed && (
+          <p role="status" className="mb-3 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#EFF6F1", color: "#185C37" }}>Continuaste donde te quedaste: tus respuestas y fórmulas anteriores ya están cargadas. Tu avance se guarda solo mientras contestas.</p>
+        )}
         {/* PRÁCTICA primero en móvil: la hoja es el héroe */}
         <section aria-label="Práctica en hoja simulada">
           <h2 className="text-xl font-extrabold">Parte 1 · Práctica en la hoja</h2>
@@ -916,6 +1103,7 @@ export function App() {
           <div className="mt-3 space-y-3">
             {v.questions.map((q, qi) => (
               <fieldset key={q.id} className="rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                {q.cells && <MiniSheet cells={q.cells} bar={q.bar} />}
                 <p className="text-[15px] font-semibold leading-snug">{qi + 1}. {q.q}</p>
                 <div className="mt-3 space-y-2" role="radiogroup" aria-label={`Opciones de la pregunta ${qi + 1}`}>
                   {q.options.map((opt, oi) => {

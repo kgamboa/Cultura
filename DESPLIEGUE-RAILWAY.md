@@ -21,9 +21,9 @@ Guía rápida para el maestro. La versión que vive dentro de Muse ya funciona y
    - `PORT`: lo inyecta Railway, no lo escribas.
    - `NODE_ENV=production`.
    - `DATABASE_URL`: la crea Railway al enlazar el Postgres. Es **requerida**: ahí se guardan los resultados (`exam_results`), la lista de alumnos (`roster_entries`) y la contraseña del maestro (`app_settings`). El SQLite local ya no es el almacén.
-5. (Opcional) Aplica la migración del esquema: `psql "$DATABASE_URL" -f postgres/0001_initial.sql`. Si no la corres, la app crea las tablas automáticamente en el primer uso.
+5. **No tienes que aplicar ninguna migración a mano:** al arrancar, el contenedor corre `server/migrate.mjs`, que ejecuta `postgres/0001_initial.sql` y crea las tablas (`exam_results`, `roster_entries`, `app_settings`, `exam_progress`) si no existen. Es idempotente: se corre en cada despliegue sin borrar datos. La base ya no queda vacía. (Si algún día quieres correrla tú: `psql "$DATABASE_URL" -f postgres/0001_initial.sql`; y los handlers también crean las tablas en el primer uso, como respaldo.)
 6. En **Settings → Networking → Generate Domain** crea la dirección pública y compártela con el grupo.
-7. Después del primer despliegue, abre el **panel del maestro** y define la contraseña (ver la sección siguiente); hasta definirla, el panel no muestra la lista ni los resultados. Ya con el panel desbloqueado, vuelve a cargar la lista de los 54 alumnos: el Postgres de Railway arranca vacío.
+7. Después del primer despliegue, abre el **panel del maestro** y define la contraseña (ver la sección siguiente); hasta definirla, el panel no muestra la lista ni los resultados. Ya con el panel desbloqueado, carga la lista de los 54 alumnos **una sola vez desde el panel**: las tablas se crean solas al arrancar, pero la lista NO va en el repositorio (es público y trae nombres de alumnos), así que ningún despliegue la sube automáticamente.
 8. Prueba: entra con unas iniciales de ejemplo, resuelve una pregunta y verifica que cargue la hoja simulada.
 
 ## Contraseña del maestro

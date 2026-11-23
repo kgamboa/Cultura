@@ -89,6 +89,75 @@ export const Actions = {
     },
   }),
 
+  checkExistingResult: defineAction({
+    description: "Revisa si ya existe un resultado enviado con esas iniciales, para bloquear que el alumno repita la misma variante. Devuelve solo su nombre y su calificación.",
+    request: z.object({ initials: z.string().trim().max(12).default("") }),
+    response: z.object({
+      dbReady: z.boolean(),
+      result: z.object({
+        studentName: z.string(), variantCode: z.string(), score: z.number(),
+        totalPoints: z.number(), percentage: z.number(), created_at: z.string(),
+      }).nullable(),
+    }),
+    privileged: [Pg.pgFindResultByInitials],
+    async handler(ctx, args) {
+      return await ctx.executePrivileged(Pg.pgFindResultByInitials, {
+        initials: args.initials.toUpperCase().replace(/\s+/g, ""),
+      });
+    },
+  }),
+
+  deleteResult: defineAction({
+    description: "Borra el resultado guardado de un alumno para que pueda volver a hacer el examen. Exige la contraseña del maestro, verificada en el servidor.",
+    request: z.object({ password: passwordField, id: z.number().int().positive() }),
+    response: z.object({ ok: z.literal(true) }),
+    privileged: [Pg.pgDeleteResult],
+    async handler(ctx, args): Promise<{ ok: true }> {
+      const result = await ctx.executePrivileged(Pg.pgDeleteResult, {
+        passwordHash: await sha256Hex(args.password),
+        id: args.id,
+      });
+      ctx.invalidateQueries();
+      return result;
+    },
+  }),
+
+  saveProgress: defineAction({
+    description: "Guarda el avance en curso del alumno (respuestas, fórmulas y celda actual como JSON) con sus iniciales, para que continúe donde se quedó si sale antes de terminar.",
+    request: z.object({
+      initials: z.string().trim().min(2).max(12),
+      studentName: z.string().trim().max(80).default(""),
+      variantCode: z.string().trim().max(20).default(""),
+      state: z.string().max(30000),
+    }),
+    response: z.object({ ok: z.literal(true) }),
+    privileged: [Pg.pgSaveProgress],
+    async handler(ctx, args): Promise<{ ok: true }> {
+      const result = await ctx.executePrivileged(Pg.pgSaveProgress, {
+        initials: args.initials.toUpperCase().replace(/\s+/g, ""),
+        studentName: args.studentName,
+        variantCode: args.variantCode,
+        state: args.state,
+      });
+      return result;
+    },
+  }),
+
+  getProgress: defineAction({
+    description: "Recupera el avance en curso guardado con esas iniciales, si el alumno empezó el examen y no lo ha enviado todavía.",
+    request: z.object({ initials: z.string().trim().max(12).default("") }),
+    response: z.object({
+      dbReady: z.boolean(),
+      progress: z.object({ studentName: z.string(), variantCode: z.string(), state: z.string() }).nullable(),
+    }),
+    privileged: [Pg.pgGetProgress],
+    async handler(ctx, args) {
+      return await ctx.executePrivileged(Pg.pgGetProgress, {
+        initials: args.initials.toUpperCase().replace(/\s+/g, ""),
+      });
+    },
+  }),
+
   lookupStudent: defineAction({
     description: "Busca el nombre de un alumno por sus iniciales en la lista cargada, para identificarlo al entrar al examen. No expone la lista completa.",
     request: z.object({ initials: z.string().trim().max(12).default("") }),

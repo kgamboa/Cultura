@@ -19,6 +19,10 @@ FROM oven/bun:1 AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app /app
-# Servidor estático mínimo para Railway: sirve client/dist y respeta $PORT
+# Al arrancar: primero la migración automática (server/migrate.mjs aplica
+# postgres/0001_initial.sql y crea las tablas en Postgres si no existen,
+# sin pasos manuales; la lista de alumnos NO se carga aquí, se carga desde
+# el panel del maestro). Después, el servidor estático mínimo que sirve
+# client/dist y respeta $PORT.
 EXPOSE 8080
-CMD ["sh", "-c", "bun -e \"const port=parseInt(process.env.PORT||'8080'); const server=Bun.serve({port, async fetch(req){ const url=new URL(req.url); let path=url.pathname==='/'?'/index.html':url.pathname; let file=Bun.file('./client/dist'+path); if(!(await file.exists())) file=Bun.file('./client/dist/index.html'); return new Response(file); }}); console.log('Examen de Excel escuchando en puerto '+server.port);\""]
+CMD ["sh", "-c", "bun ./server/migrate.mjs; bun -e \"const port=parseInt(process.env.PORT||'8080'); const server=Bun.serve({port, async fetch(req){ const url=new URL(req.url); let path=url.pathname==='/'?'/index.html':url.pathname; let file=Bun.file('./client/dist'+path); if(!(await file.exists())) file=Bun.file('./client/dist/index.html'); return new Response(file); }}); console.log('Examen de Excel escuchando en puerto '+server.port);\""]

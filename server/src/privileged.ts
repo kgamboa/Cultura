@@ -92,6 +92,43 @@ export const Pg = definePrivilegedContracts({
     response: z.object({ dbReady: z.boolean(), count: z.number(), fullName: z.string().nullable() }),
     timeoutMs: 30000,
   },
+  // Bloqueo de reingreso: con unas iniciales devuelve el resultado ya
+  // enviado más reciente (si existe), para que el alumno no pueda repetir
+  // la misma variante. Solo expone nombre y calificación de ESE alumno.
+  pgFindResultByInitials: {
+    request: z.object({ initials: z.string() }),
+    response: z.object({
+      dbReady: z.boolean(),
+      result: z.object({
+        studentName: z.string(), variantCode: z.string(), score: z.number(),
+        totalPoints: z.number(), percentage: z.number(), created_at: z.string(),
+      }).nullable(),
+    }),
+    timeoutMs: 30000,
+  },
+  // Borrado de un resultado desde el panel del maestro (con su contraseña):
+  // permite que ese alumno vuelva a hacer el examen.
+  pgDeleteResult: {
+    request: z.object({ passwordHash: z.string(), id: z.number() }),
+    response: z.object({ ok: z.literal(true) }),
+    timeoutMs: 30000,
+  },
+  // Avance en curso del alumno (respuestas, fórmulas y celda actual, como
+  // JSON en `state`), guardado por iniciales mientras el examen no se ha
+  // enviado. Al enviar el examen, pgSubmitResult borra este avance.
+  pgSaveProgress: {
+    request: z.object({ initials: z.string(), studentName: z.string(), variantCode: z.string(), state: z.string() }),
+    response: z.object({ ok: z.literal(true) }),
+    timeoutMs: 30000,
+  },
+  pgGetProgress: {
+    request: z.object({ initials: z.string() }),
+    response: z.object({
+      dbReady: z.boolean(),
+      progress: z.object({ studentName: z.string(), variantCode: z.string(), state: z.string() }).nullable(),
+    }),
+    timeoutMs: 30000,
+  },
 });
 
 const CREATE_EXAM_RESULTS = `
@@ -117,6 +154,15 @@ CREATE TABLE IF NOT EXISTS roster_entries (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 )`;
 
+const CREATE_EXAM_PROGRESS = `
+CREATE TABLE IF NOT EXISTS exam_progress (
+  initials TEXT PRIMARY KEY,
+  student_name TEXT NOT NULL DEFAULT '',
+  variant_code TEXT NOT NULL DEFAULT '',
+  state TEXT NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)`;
+
 const CREATE_APP_SETTINGS = `
 CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,
@@ -139,6 +185,7 @@ async function withPg<T>(fn: (sql: SQL) => Promise<T>): Promise<T> {
     await sql.unsafe(CREATE_EXAM_RESULTS);
     await sql.unsafe(CREATE_ROSTER_ENTRIES);
     await sql.unsafe(CREATE_APP_SETTINGS);
+    await sql.unsafe(CREATE_EXAM_PROGRESS);
     return await fn(sql);
   } finally {
     await sql.close({ timeout: 1 }).catch(() => undefined);
@@ -181,6 +228,8 @@ export const PgHandlers = definePrivilegedHandlers(Pg, {
       `) as unknown as { id: number }[];
       const row = rows[0];
       if (!row) throw new Error("No se pudo guardar el resultado en Postgres");
+      // El examen ya se envió: el avance en curso se borra, queda el resultado.
+      await sql`DELETE FROM exam_progress WHERE initials = ${args.initials}`;
       return { id: row.id };
     }),
 
@@ -289,6 +338,62 @@ export const PgHandlers = definePrivilegedHandlers(Pg, {
         fullName = rows[0]?.full_name || null;
       }
       return { dbReady: true, count: countRows[0]?.n ?? 0, fullName };
+    });
+  },
+
+  pgFindResultByInitials: async (args) => {
+    if (!process.env.DATABASE_URL) return { dbReady: false, result: null };
+    return withPg(async (sql) => {
+      const rows = (await sql`
+        SELECT student_name, variant_code, score, total_points, percentage, created_at
+        FROM exam_results
+        WHERE initials = ${args.initials}
+        ORDER BY id DESC
+        LIMIT 1
+      `) as unknown as { student_name: string; variant_code: string; score: number; total_points: number; percentage: number; created_at: Date | string }[];
+      const r = rows[0];
+      if (!r) return { dbReady: true, result: null };
+      return {
+        dbReady: true,
+        result: {
+          studentName: r.student_name, variantCode: r.variant_code, score: r.score,
+          totalPoints: r.total_points, percentage: r.percentage,
+          created_at: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
+        },
+      };
+    });
+  },
+
+  pgDeleteResult: async (args) =>
+    withPg(async (sql) => {
+      await requireTeacher(sql, args.passwordHash);
+      await sql`DELETE FROM exam_results WHERE id = ${args.id}`;
+      return { ok: true as const };
+    }),
+
+  pgSaveProgress: async (args) =>
+    withPg(async (sql) => {
+      await sql`
+        INSERT INTO exam_progress (initials, student_name, variant_code, state, updated_at)
+        VALUES (${args.initials}, ${args.studentName}, ${args.variantCode}, ${args.state}, now())
+        ON CONFLICT (initials) DO UPDATE SET
+          student_name = EXCLUDED.student_name,
+          variant_code = EXCLUDED.variant_code,
+          state = EXCLUDED.state,
+          updated_at = now()
+      `;
+      return { ok: true as const };
+    }),
+
+  pgGetProgress: async (args) => {
+    if (!process.env.DATABASE_URL) return { dbReady: false, progress: null };
+    return withPg(async (sql) => {
+      const rows = (await sql`
+        SELECT student_name, variant_code, state FROM exam_progress WHERE initials = ${args.initials} LIMIT 1
+      `) as unknown as { student_name: string; variant_code: string; state: string }[];
+      const r = rows[0];
+      if (!r) return { dbReady: true, progress: null };
+      return { dbReady: true, progress: { studentName: r.student_name, variantCode: r.variant_code, state: r.state } };
     });
   },
 });
