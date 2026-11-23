@@ -30,3 +30,13 @@ CREATE TABLE IF NOT EXISTS roster_entries (
   full_name TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Ajustes de la app. Aquí vive la contraseña del maestro: la fila con
+-- key = 'teacher_password_hash' guarda SOLO el hash SHA-256 de la
+-- contraseña (nunca la contraseña en claro). La define el maestro la
+-- primera vez que abre el panel; para cambiarla, borra esa fila y el
+-- panel pedirá definir una nueva.
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);

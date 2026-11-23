@@ -8,6 +8,8 @@ Guía rápida para el maestro. La versión que vive dentro de Muse ya funciona y
 |---|---|
 | `railway.json` | Le dice a Railway que construya con el `Dockerfile` y reinicie el servicio si falla. |
 | `Dockerfile` | Construye el cliente con Bun y lo sirve en el puerto `$PORT` que asigna Railway. |
+| `vendor/space-sdk/` | El paquete `@hatch/space-sdk` extraído como directorio de texto (`package.json` + `dist`). `package.json` lo declara como dependencia `file:./vendor/space-sdk`, así que `bun install` lo resuelve localmente en cualquier entorno, sin rutas de Muse. Va como texto (sin el `.tgz` binario anterior) para que el repo se pueda subir completo a GitHub. No incluye `dist/pdfjs-assets/` (binarios de pdf.js: cmaps, fuentes y wasm): este examen no usa el visor de PDF del SDK, así que no hacen falta. |
+| `client/build-railway.mjs` | Compila el cliente dentro del contenedor. El build normal (`client/build.mjs`, del SDK) solo corre dentro de Muse, así que Railway usa este script equivalente con la misma salida (`client/dist`). |
 | `.env.example` | Plantilla de variables de entorno documentadas (no subas un `.env` real con claves). |
 
 ## Pasos
@@ -18,12 +20,20 @@ Guía rápida para el maestro. La versión que vive dentro de Muse ya funciona y
 4. Enlaza un servicio **Postgres** al proyecto y verifica en **Variables**:
    - `PORT`: lo inyecta Railway, no lo escribas.
    - `NODE_ENV=production`.
-   - `DATABASE_URL`: la crea Railway al enlazar el Postgres. Es **requerida**: ahí se guardan los resultados (`exam_results`) y la lista de alumnos (`roster_entries`). El SQLite local ya no es el almacén.
-   - `TEACHER_PIN`: opcional, para proteger el panel del maestro en un despliegue público.
+   - `DATABASE_URL`: la crea Railway al enlazar el Postgres. Es **requerida**: ahí se guardan los resultados (`exam_results`), la lista de alumnos (`roster_entries`) y la contraseña del maestro (`app_settings`). El SQLite local ya no es el almacén.
 5. (Opcional) Aplica la migración del esquema: `psql "$DATABASE_URL" -f postgres/0001_initial.sql`. Si no la corres, la app crea las tablas automáticamente en el primer uso.
 6. En **Settings → Networking → Generate Domain** crea la dirección pública y compártela con el grupo.
-7. Después del primer despliegue, vuelve a cargar la lista de los 54 alumnos en el panel del maestro: el Postgres de Railway arranca vacío.
+7. Después del primer despliegue, abre el **panel del maestro** y define la contraseña (ver la sección siguiente); hasta definirla, el panel no muestra la lista ni los resultados. Ya con el panel desbloqueado, vuelve a cargar la lista de los 54 alumnos: el Postgres de Railway arranca vacío.
 8. Prueba: entra con unas iniciales de ejemplo, resuelve una pregunta y verifica que cargue la hoja simulada.
+
+## Contraseña del maestro
+
+El panel del maestro (lista de alumnos y resultados guardados) está protegido con contraseña. Los alumnos **no** necesitan contraseña para entrar a su examen.
+
+- **Cómo se define:** la primera vez que se abre el panel del maestro, la app pide crear la contraseña (escribirla dos veces) y la guarda en el servidor en ese momento. No hay contraseña por defecto ni variable de entorno para esto.
+- **Dónde se guarda:** en Postgres, tabla `app_settings`, fila `teacher_password_hash`. Solo se guarda el **hash SHA-256** de la contraseña, nunca la contraseña en claro.
+- **Cómo se verifica:** cada vez que se desbloquea el panel, la contraseña escrita se compara **en el servidor** contra ese hash; el panel no muestra la lista ni los resultados hasta que la verificación pasa. Guardar o borrar la lista y leer los resultados también exigen la contraseña verificada en el servidor en cada llamada.
+- **Si la olvidas:** no hay recuperación en la app. Borra la fila en el Postgres de Railway (`DELETE FROM app_settings WHERE key = 'teacher_password_hash';`) y el panel volverá a pedir definir una contraseña nueva la próxima vez que se abra.
 
 ## Notas honestas
 

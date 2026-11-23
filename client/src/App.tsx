@@ -439,35 +439,80 @@ export function App() {
   const [grade, setGrade] = useState<Grade | null>(null);
   const [rosterText, setRosterText] = useState("");
   const [teacherMsg, setTeacherMsg] = useState("");
+  // Contraseña del maestro: solo vive en memoria mientras el panel está
+  // desbloqueado; la verificación siempre ocurre en el servidor.
+  const [teacherPw, setTeacherPw] = useState("");
+  const [pwInput, setPwInput] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwError, setPwError] = useState("");
 
-  const roster = useQuery({ queryKey: ["roster"], queryFn: () => api.getRoster({}) });
-  const results = useQuery({ queryKey: ["results"], queryFn: () => api.listResults({ limit: 100 }), enabled: phase === "teacher" || phase === "result" });
+  const unlocked = teacherPw.length > 0;
+  const teacherStatus = useQuery({ queryKey: ["teacher-status"], queryFn: () => api.teacherStatus({}), enabled: phase === "teacher" });
+  const rosterInfo = useQuery({ queryKey: ["roster-info"], queryFn: () => api.lookupStudent({ initials: "" }) });
+  const roster = useQuery({ queryKey: ["roster", teacherPw], queryFn: () => api.getRoster({ password: teacherPw }), enabled: phase === "teacher" && unlocked });
+  const results = useQuery({ queryKey: ["results", teacherPw], queryFn: () => api.listResults({ limit: 100, password: teacherPw }), enabled: phase === "teacher" && unlocked });
 
   const submitMut = useMutation({
     mutationFn: async (args: { studentName: string; initials: string; variantCode: string; score: number; totalPoints: number; percentage: number; theoryScore: number; practicalScore: number; details: string }) => await api.submitResult(args),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["results"] }),
   });
   const saveRosterMut = useMutation({
-    mutationFn: async (entries: { initials: string; fullName: string }[]) => await api.saveRoster({ entries }),
-    onSuccess: (r) => { setTeacherMsg(`Lista guardada: ${r.count} alumno(s). Sirve para identificar: si las iniciales coinciden, se completa el nombre del alumno.`); queryClient.invalidateQueries({ queryKey: ["roster"] }); },
+    mutationFn: async (entries: { initials: string; fullName: string }[]) => await api.saveRoster({ password: teacherPw, entries }),
+    onSuccess: (r) => { setTeacherMsg(`Lista guardada: ${r.count} alumno(s). Sirve para identificar: si las iniciales coinciden, se completa el nombre del alumno.`); queryClient.invalidateQueries({ queryKey: ["roster"] }); queryClient.invalidateQueries({ queryKey: ["roster-info"] }); },
     onError: (e) => setTeacherMsg(`Error al guardar: ${e instanceof Error ? e.message : String(e)}`),
   });
   const clearRosterMut = useMutation({
-    mutationFn: async () => await api.clearRoster({}),
-    onSuccess: () => { setTeacherMsg("Lista borrada. Sin lista, el examen usa el nombre que escriba cada alumno."); queryClient.invalidateQueries({ queryKey: ["roster"] }); },
+    mutationFn: async () => await api.clearRoster({ password: teacherPw }),
+    onSuccess: () => { setTeacherMsg("Lista borrada. Sin lista, el examen usa el nombre que escriba cada alumno."); queryClient.invalidateQueries({ queryKey: ["roster"] }); queryClient.invalidateQueries({ queryKey: ["roster-info"] }); },
+    onError: (e) => setTeacherMsg(`Error al borrar: ${e instanceof Error ? e.message : String(e)}`),
+  });
+  const setPwMut = useMutation({
+    mutationFn: async (pw: string) => await api.setTeacherPassword({ password: pw }),
+    onSuccess: (_r, pw) => { setTeacherPw(pw); setPwInput(""); setPwConfirm(""); setPwError(""); queryClient.invalidateQueries({ queryKey: ["teacher-status"] }); },
+    onError: (e) => setPwError(e instanceof Error ? e.message : String(e)),
+  });
+  const verifyPwMut = useMutation({
+    mutationFn: async (pw: string) => await api.verifyTeacherPassword({ password: pw }),
+    onSuccess: (r, pw) => {
+      if (r.ok) { setTeacherPw(pw); setPwInput(""); setPwError(""); }
+      else setPwError("Contraseña incorrecta. Inténtalo de nuevo.");
+    },
+    onError: (e) => setPwError(e instanceof Error ? e.message : String(e)),
   });
 
-  const rosterCount = roster.data?.count ?? 0;
-  const rosterMap = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const e of roster.data?.entries ?? []) m.set(e.initials.toUpperCase(), e.fullName);
-    return m;
-  }, [roster.data]);
+  function lockPanel() {
+    setTeacherPw("");
+    setPwInput("");
+    setPwError("");
+    queryClient.removeQueries({ queryKey: ["roster"] });
+    queryClient.removeQueries({ queryKey: ["results"] });
+  }
 
-  function startExam() {
+  function submitSetPassword() {
+    if (pwInput.length < 4) { setPwError("La contraseña debe tener al menos 4 caracteres."); return; }
+    if (pwInput !== pwConfirm) { setPwError("Las contraseñas no coinciden. Escríbela dos veces igual."); return; }
+    setPwError("");
+    setPwMut.mutate(pwInput);
+  }
+
+  function submitUnlock() {
+    if (!pwInput) { setPwError("Escribe la contraseña del maestro."); return; }
+    setPwError("");
+    verifyPwMut.mutate(pwInput);
+  }
+
+  const rosterCount = rosterInfo.data?.count ?? 0;
+
+  async function startExam() {
     const ini = normInitials(initialsInput);
     if (ini.length < 2) { setEntryError("Escribe tus iniciales (al menos 2 letras), en el orden de la lista oficial, apellidos primero. Ejemplo: AGUILAR MENDEZ OSCAR EMILIO → AMOE."); return; }
-    const fromList = rosterMap.get(ini) ?? "";
+    // Identificación: si las iniciales están en la lista del maestro, el
+    // nombre se completa solo. La lista completa nunca llega al alumno.
+    let fromList = "";
+    try {
+      const r = await api.lookupStudent({ initials: ini });
+      fromList = r.fullName ?? "";
+    } catch { fromList = ""; }
     const name = (fullName.trim() || fromList).trim();
     if (!name) { setEntryError("Escribe tu nombre completo, además de tus iniciales."); return; }
     setEntryError("");
@@ -573,7 +618,7 @@ export function App() {
               </p>
             )}
             {entryError && <p role="alert" className="mt-3 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>{entryError}</p>}
-            <button type="button" onClick={startExam} className="mt-5 w-full rounded-xl py-3 text-base font-bold text-white" style={{ background: "#217346" }}>Comenzar mi examen</button>
+            <button type="button" onClick={() => void startExam()} className="mt-5 w-full rounded-xl py-3 text-base font-bold text-white" style={{ background: "#217346" }}>Comenzar mi examen</button>
           </section>
 
           <button type="button" onClick={() => setPhase("teacher")} className="mt-4 w-full rounded-xl border py-3 text-sm font-bold" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text)" }}>
@@ -588,6 +633,8 @@ export function App() {
   /* ---------- TEACHER ---------- */
   if (phase === "teacher") {
     const parsedPreview = parseRosterText(rosterText);
+    const status = teacherStatus.data;
+    const teacherRosterCount = roster.data?.count ?? 0;
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <SafeAreaTopScrim backgroundColor="var(--bg)" />
@@ -595,49 +642,90 @@ export function App() {
           <button type="button" onClick={() => setPhase("intro")} className="text-sm font-bold" style={{ color: "var(--accent)" }}>← Volver al inicio</button>
           <h1 className="mt-2 text-2xl font-extrabold">Panel del maestro</h1>
 
-          <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Lista de alumnos">
-            <h2 className="text-lg font-bold">Lista de alumnos {rosterCount > 0 ? `(${rosterCount} cargados)` : "(sin cargar)"}</h2>
-            {roster.data && !roster.data.dbReady && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>Postgres no está disponible en este entorno (falta DATABASE_URL): la lista no se puede leer ni guardar aquí.</p>}
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--dim)" }}>
-              Pega la lista de tus 54 alumnos, uno por línea. Acepta cualquiera de estos formatos: el nombre completo (el sistema calcula las iniciales), o iniciales y nombre. Ejemplos:
-            </p>
-            <pre className="mt-2 overflow-x-auto rounded-xl p-3 font-mono text-xs" style={{ background: "var(--bg)" }}>{"Karlo Gamboa Ibarria\nKGI — Karlo Gamboa Ibarria\nKGI, Karlo Gamboa Ibarria"}</pre>
-            <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>La lista sirve solo para identificar: si las iniciales del alumno coinciden con un registro, su nombre se completa automáticamente cuando lo deja vacío. El examen acepta cualquier iniciales, estén o no en la lista.</p>
-            <label htmlFor="roster-text" className="mt-4 block text-sm font-semibold">Pega aquí la lista</label>
-            <textarea id="roster-text" value={rosterText} onChange={(e) => setRosterText(e.target.value)} rows={8} placeholder={"Un alumno por línea…"} className="mt-1 w-full rounded-xl border px-3 py-2 font-mono text-sm" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
-            {rosterText.trim() && <p className="mt-2 text-sm font-semibold">Se detectaron {parsedPreview.length} alumno(s): {parsedPreview.slice(0, 8).map((p) => p.initials).join(", ")}{parsedPreview.length > 8 ? "…" : ""}</p>}
-            {teacherMsg && <p role="status" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#EFF6F1", color: "#185C37" }}>{teacherMsg}</p>}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" disabled={parsedPreview.length === 0 || saveRosterMut.isPending} onClick={() => saveRosterMut.mutate(parsedPreview)} className="rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40" style={{ background: "#217346" }}>Guardar lista (reemplaza la anterior)</button>
-              <button type="button" disabled={rosterCount === 0 || clearRosterMut.isPending} onClick={() => clearRosterMut.mutate()} className="rounded-xl border px-4 py-2.5 text-sm font-bold disabled:opacity-40" style={{ borderColor: "var(--border)" }}>Borrar lista</button>
-            </div>
-            {rosterCount > 0 && (
-              <ul className="mt-4 grid grid-cols-2 gap-1.5 text-sm sm:grid-cols-3" aria-label="Alumnos registrados">
-                {(roster.data?.entries ?? []).map((e) => (
-                  <li key={e.id} className="rounded-lg px-2 py-1.5" style={{ background: "var(--bg)" }}><span className="font-mono font-bold">{e.initials}</span>{e.fullName ? <span style={{ color: "var(--dim)" }}> · {e.fullName}</span> : null}</li>
-                ))}
-              </ul>
-            )}
-          </section>
+          {teacherStatus.isPending && <p className="mt-4 text-sm" style={{ color: "var(--dim)" }}>Cargando…</p>}
 
-          <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Resultados">
-            <h2 className="text-lg font-bold">Resultados guardados ({results.data?.results.length ?? 0})</h2>
-            {results.isPending && <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>Cargando…</p>}
-            {results.isError && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>No se pudieron cargar los resultados desde Postgres. Revisa que la variable DATABASE_URL esté configurada y el servicio de Postgres esté en línea.</p>}
-            {results.data && !results.data.dbReady && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>Postgres no está disponible en este entorno (falta DATABASE_URL): no hay almacén del cual leer resultados.</p>}
-            {(results.data?.results.length ?? 0) === 0 && !results.isPending && <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>Todavía no hay exámenes terminados.</p>}
-            <div className="mt-3 space-y-2">
-              {(results.data?.results ?? []).map((r) => (
-                <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5" style={{ background: "var(--bg)" }}>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">{r.studentName} <span className="font-mono text-xs" style={{ color: "var(--dim)" }}>{r.initials} · {r.variantCode}</span></p>
-                    <p className="text-xs" style={{ color: "var(--dim)" }}>Teoría {fmtNum(r.theoryScore)} · Práctica {fmtNum(r.practicalScore)} · {new Date(r.created_at).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
-                  </div>
-                  <span className="shrink-0 rounded-full px-3 py-1 font-mono text-sm font-bold text-white" style={{ background: r.percentage >= 60 ? "#217346" : "#D64541" }}>{fmtNum(r.percentage)}%</span>
+          {status && !status.dbReady && (
+            <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Panel no disponible">
+              <p role="alert" className="rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>Postgres no está disponible en este entorno (falta DATABASE_URL): sin el servidor no se puede verificar la contraseña ni leer la lista o los resultados.</p>
+            </section>
+          )}
+
+          {status?.dbReady && !status.hasPassword && (
+            <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Definir contraseña del maestro">
+              <h2 className="text-lg font-bold">🔒 Define la contraseña del maestro</h2>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--dim)" }}>Es la primera vez que se abre el panel: escribe la contraseña que protegerá la lista de alumnos y los resultados. Se guarda en el servidor (solo su huella, nunca en claro) y se te pedirá cada vez que entres al panel. Los alumnos no necesitan contraseña para hacer su examen.</p>
+              <label htmlFor="new-teacher-password" className="mt-4 block text-sm font-semibold">Contraseña nueva</label>
+              <input id="new-teacher-password" type="password" autoComplete="new-password" {...FIELDS.setTeacherPassword.password} value={pwInput} onChange={(e) => setPwInput(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+              <label htmlFor="confirm-teacher-password" className="mt-3 block text-sm font-semibold">Confírmala</label>
+              <input id="confirm-teacher-password" type="password" autoComplete="new-password" {...FIELDS.setTeacherPassword.password} value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitSetPassword(); }} className="mt-1 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+              {pwError && <p role="alert" className="mt-3 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>{pwError}</p>}
+              <button type="button" disabled={setPwMut.isPending} onClick={submitSetPassword} className="mt-4 w-full rounded-xl py-3 text-base font-bold text-white disabled:opacity-40" style={{ background: "#217346" }}>{setPwMut.isPending ? "Guardando…" : "Guardar contraseña y entrar"}</button>
+            </section>
+          )}
+
+          {status?.dbReady && status.hasPassword && !unlocked && (
+            <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Panel bloqueado">
+              <h2 className="text-lg font-bold">🔒 Panel bloqueado</h2>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--dim)" }}>La lista de alumnos y los resultados solo se muestran con la contraseña del maestro. Se verifica en el servidor, no en este dispositivo.</p>
+              <label htmlFor="teacher-password" className="mt-4 block text-sm font-semibold">Contraseña del maestro</label>
+              <input id="teacher-password" type="password" autoComplete="current-password" {...FIELDS.verifyTeacherPassword.password} value={pwInput} onChange={(e) => setPwInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitUnlock(); }} className="mt-1 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+              {pwError && <p role="alert" className="mt-3 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>{pwError}</p>}
+              <button type="button" disabled={verifyPwMut.isPending} onClick={submitUnlock} className="mt-4 w-full rounded-xl py-3 text-base font-bold text-white disabled:opacity-40" style={{ background: "#217346" }}>{verifyPwMut.isPending ? "Verificando…" : "Desbloquear panel"}</button>
+            </section>
+          )}
+
+          {status?.dbReady && unlocked && (
+            <>
+              <div className="mt-3 flex justify-end">
+                <button type="button" onClick={lockPanel} className="rounded-xl border px-4 py-2 text-sm font-bold" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>🔒 Bloquear panel</button>
+              </div>
+
+              <section className="mt-3 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Lista de alumnos">
+                <h2 className="text-lg font-bold">Lista de alumnos {teacherRosterCount > 0 ? `(${teacherRosterCount} cargados)` : "(sin cargar)"}</h2>
+                {roster.isPending && <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>Cargando la lista…</p>}
+                {roster.isError && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>No se pudo cargar la lista: {roster.error instanceof Error ? roster.error.message : "error desconocido"}</p>}
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--dim)" }}>
+                  Pega la lista de tus 54 alumnos, uno por línea. Acepta cualquiera de estos formatos: el nombre completo (el sistema calcula las iniciales), o iniciales y nombre. Ejemplos:
+                </p>
+                <pre className="mt-2 overflow-x-auto rounded-xl p-3 font-mono text-xs" style={{ background: "var(--bg)" }}>{"Karlo Gamboa Ibarria\nKGI — Karlo Gamboa Ibarria\nKGI, Karlo Gamboa Ibarria"}</pre>
+                <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>La lista sirve solo para identificar: si las iniciales del alumno coinciden con un registro, su nombre se completa automáticamente cuando lo deja vacío. El examen acepta cualquier iniciales, estén o no en la lista.</p>
+                <label htmlFor="roster-text" className="mt-4 block text-sm font-semibold">Pega aquí la lista</label>
+                <textarea id="roster-text" value={rosterText} onChange={(e) => setRosterText(e.target.value)} rows={8} placeholder={"Un alumno por línea…"} className="mt-1 w-full rounded-xl border px-3 py-2 font-mono text-sm" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }} />
+                {rosterText.trim() && <p className="mt-2 text-sm font-semibold">Se detectaron {parsedPreview.length} alumno(s): {parsedPreview.slice(0, 8).map((p) => p.initials).join(", ")}{parsedPreview.length > 8 ? "…" : ""}</p>}
+                {teacherMsg && <p role="status" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#EFF6F1", color: "#185C37" }}>{teacherMsg}</p>}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" disabled={parsedPreview.length === 0 || saveRosterMut.isPending} onClick={() => saveRosterMut.mutate(parsedPreview)} className="rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40" style={{ background: "#217346" }}>Guardar lista (reemplaza la anterior)</button>
+                  <button type="button" disabled={teacherRosterCount === 0 || clearRosterMut.isPending} onClick={() => clearRosterMut.mutate()} className="rounded-xl border px-4 py-2.5 text-sm font-bold disabled:opacity-40" style={{ borderColor: "var(--border)" }}>Borrar lista</button>
                 </div>
-              ))}
-            </div>
-          </section>
+                {teacherRosterCount > 0 && (
+                  <ul className="mt-4 grid grid-cols-2 gap-1.5 text-sm sm:grid-cols-3" aria-label="Alumnos registrados">
+                    {(roster.data?.entries ?? []).map((e) => (
+                      <li key={e.id} className="rounded-lg px-2 py-1.5" style={{ background: "var(--bg)" }}><span className="font-mono font-bold">{e.initials}</span>{e.fullName ? <span style={{ color: "var(--dim)" }}> · {e.fullName}</span> : null}</li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="mt-4 rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }} aria-label="Resultados">
+                <h2 className="text-lg font-bold">Resultados guardados ({results.data?.results.length ?? 0})</h2>
+                {results.isPending && <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>Cargando…</p>}
+                {results.isError && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>No se pudieron cargar los resultados desde Postgres. Revisa que la variable DATABASE_URL esté configurada y el servicio de Postgres esté en línea.</p>}
+                {results.data && !results.data.dbReady && <p role="alert" className="mt-2 rounded-xl px-3 py-2 text-sm font-semibold" style={{ background: "#FDECEC", color: "#8B1E1E" }}>Postgres no está disponible en este entorno (falta DATABASE_URL): no hay almacén del cual leer resultados.</p>}
+                {(results.data?.results.length ?? 0) === 0 && !results.isPending && !results.isError && <p className="mt-2 text-sm" style={{ color: "var(--dim)" }}>Todavía no hay exámenes terminados.</p>}
+                <div className="mt-3 space-y-2">
+                  {(results.data?.results ?? []).map((r) => (
+                    <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5" style={{ background: "var(--bg)" }}>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold">{r.studentName} <span className="font-mono text-xs" style={{ color: "var(--dim)" }}>{r.initials} · {r.variantCode}</span></p>
+                        <p className="text-xs" style={{ color: "var(--dim)" }}>Teoría {fmtNum(r.theoryScore)} · Práctica {fmtNum(r.practicalScore)} · {new Date(r.created_at).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                      </div>
+                      <span className="shrink-0 rounded-full px-3 py-1 font-mono text-sm font-bold text-white" style={{ background: r.percentage >= 60 ? "#217346" : "#D64541" }}>{fmtNum(r.percentage)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
 
           <section className="mt-4 rounded-2xl border p-5 text-sm leading-relaxed" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--dim)" }} aria-label="Publicación en Railway">
             <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>Publicar en Railway</h2>

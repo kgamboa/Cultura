@@ -3,11 +3,17 @@
 FROM oven/bun:1 AS build
 WORKDIR /app
 COPY package.json bun.lock ./
+# @hatch/space-sdk va vendored como directorio de texto dentro del repo
+# (vendor/space-sdk: package.json + dist extraídos del paquete original) y
+# package.json lo declara como `file:./vendor/space-sdk`, así que bun lo
+# resuelve localmente sin rutas del entorno de Muse.
+COPY vendor ./vendor
 RUN bun install --frozen-lockfile || bun install
 COPY . .
-# El cliente se compila a client/dist (script del proyecto, si existe)
-RUN bun run --cwd client build || bunx tsc --noEmit || true
-RUN ls client/dist || true
+# El cliente se compila a client/dist con el script autónomo de Railway
+# (client/build.mjs, el del SDK, solo corre dentro del pipeline de Muse)
+RUN bun ./client/build-railway.mjs
+RUN ls client/dist
 
 FROM oven/bun:1 AS runtime
 WORKDIR /app
